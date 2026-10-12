@@ -41,7 +41,7 @@ docker run -d --name emr-dev-db -e POSTGRES_USER=emr_owner -e POSTGRES_PASSWORD=
 | `npm run db:app-role` | Gives the `emr_app` role the password from `DATABASE_URL` |
 | `npm run db:seed` | Fake data (refuses when `NODE_ENV=production`) |
 | `npm run create-admin` | Creates an admin account (the only way one is created) |
-| `npm run db:reset` | Drop everything, re-migrate, re-seed |
+| `npm run db:reset` | Drop everything, re-migrate, re-enable the app role, re-seed |
 | `npm run audit:checkpoint` | Verifies the audit log and prints a checkpoint to keep outside the database (`-- <id> <hash>` checks against an earlier one) |
 | `npm run start:standalone` | Runs the built standalone server, as the field bundle does (e2e tests use it) |
 | `npm run build` | Production build (`output: "standalone"`, used by the Windows bundle) |

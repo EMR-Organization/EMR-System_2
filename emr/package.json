@@ -17,7 +17,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:app-role": "tsx scripts/db-app-role.ts",
     "db:seed": "prisma db seed",
-    "db:reset": "prisma migrate reset && tsx scripts/db-app-role.ts",
+    "db:reset": "prisma migrate reset && tsx scripts/db-app-role.ts && prisma db seed",
     "audit:runtime": "node scripts/audit-runtime.mjs",
     "postinstall": "prisma generate",
     "create-admin": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/create-admin.ts",
