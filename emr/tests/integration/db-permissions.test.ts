@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
 import type { Client } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { appClient, fakeHash, ownerClient, uniqueTripCode } from "./helpers";
+import { audit } from "@/server/audit";
+import { db } from "@/server/db";
+import { appClient, ownerClient, uniqueTripCode } from "./helpers";
 
 // These prove the database itself enforces the rules, so a bug (or attacker)
 // in the app can't get around them.
@@ -16,12 +18,10 @@ beforeAll(async () => {
   app = await appClient();
   owner = await ownerClient();
 
-  const audit = await app.query(
-    `INSERT INTO "AuditLog" ("action","entity","originNodeId","prevHash","hash")
-     VALUES ('test.write','Test','test',$1,$2) RETURNING id`,
-    [fakeHash("0"), randomUUID().replace(/-/g, "").padEnd(64, "a")],
-  );
-  auditId = audit.rows[0].id;
+  // A real, correctly chained entry, written the way the app writes them.
+  const action = `test.write.${randomUUID()}`;
+  await db.$transaction((tx) => audit(tx, null, { action, entity: "Test" }));
+  auditId = (await db.auditLog.findFirstOrThrow({ where: { action } })).id.toString();
 
   tripId = randomUUID();
   await app.query(
@@ -41,6 +41,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await app?.end();
   await owner?.end();
+  await db.$disconnect();
 });
 
 describe("emr_app role", () => {

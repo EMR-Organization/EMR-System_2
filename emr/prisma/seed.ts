@@ -3,6 +3,7 @@
 // Never run against a field install: it refuses in production.
 import { config } from "dotenv";
 import { fakerES_MX as faker } from "@faker-js/faker";
+import { hash } from "@node-rs/argon2";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient, type Specialty } from "../src/generated/prisma/client";
 import { PREEXISTING_CONDITIONS, WATER_CONTAMINATION_CONDITIONS, WATER_SOURCES } from "../src/lib/shared/constants";
@@ -22,13 +23,16 @@ faker.seed(2026);
 
 const SPECIALTIES: Specialty[] = ["PHYSICIAN", "DENTIST", "PEDIATRICIAN"];
 
+/** Every seeded account uses this password. Development only. */
+export const DEV_PASSWORD = "dev only password 2026";
+
 async function main() {
   if ((await db.trip.count()) > 0) {
     console.log("Database already has trips; skipping seed. Run `npx prisma migrate reset` to start over.");
     return;
   }
 
-  // Users. No passwords yet: Phase 2 adds sign-in, and the seed will set dev passwords then.
+  // Users
   const admin = await db.user.create({
     data: { email: "admin@example.org", name: "Dev Admin", role: "ADMIN", status: "ACTIVE" },
   });
@@ -55,6 +59,12 @@ async function main() {
   );
   await db.user.create({
     data: { email: "pending.doctor@example.org", name: faker.person.fullName(), role: "DOCTOR" },
+  });
+
+  const passwordHash = await hash(DEV_PASSWORD, { algorithm: 2, memoryCost: 19_456, timeCost: 2, parallelism: 1 });
+  const users = await db.user.findMany({ select: { id: true } });
+  await db.account.createMany({
+    data: users.map((u) => ({ userId: u.id, accountId: u.id, providerId: "credential", password: passwordHash })),
   });
 
   // Trips: a past one and the current one.
@@ -85,6 +95,7 @@ async function main() {
   console.log("  users    admin@example.org, physician|dentist|pediatrician@example.org,");
   console.log("           student.on@example.com (enabled), student.off@example.com (switched off),");
   console.log("           pending.doctor@example.org (awaiting approval)");
+  console.log(`  password "${DEV_PASSWORD}" for every account`);
 }
 
 async function createPatient(tripId: string, displayNumber: number, createdById: string) {

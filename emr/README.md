@@ -13,7 +13,8 @@ npm ci
 npm run db:up           # Postgres 16 on 127.0.0.1:5432 (needs the `docker compose` plugin)
 npm run db:migrate      # create the tables
 npm run db:app-role     # let the app's restricted role log in
-npm run db:seed         # fake trips, users and patients
+npm run db:seed         # fake trips, users and patients (password: "dev only password 2026")
+npm run create-admin    # optional: your own admin account
 npm run dev             # http://localhost:3000
 ```
 
@@ -39,6 +40,7 @@ docker run -d --name emr-dev-db -e POSTGRES_USER=emr_owner -e POSTGRES_PASSWORD=
 | `npm run db:migrate` | Apply migrations; after editing `prisma/schema.prisma`, creates a new one (`-- --name <what>`) |
 | `npm run db:app-role` | Gives the `emr_app` role the password from `DATABASE_URL` |
 | `npm run db:seed` | Fake data (refuses when `NODE_ENV=production`) |
+| `npm run create-admin` | Creates an admin account (the only way one is created) |
 | `npm run db:reset` | Drop everything, re-migrate, re-seed |
 | `npm run build` | Production build (`output: "standalone"`, used by the Windows bundle) |
 | `npm run audit:runtime` | After a build: fails if any high/critical advisory affects a package in the shipped server |
@@ -58,6 +60,22 @@ CI runs lint, guards, typecheck, tests, build and the runtime audit on every pul
 - **Raw SQL lives in migrations.** Grants, the audit-log trigger and CHECK constraints are in `prisma/migrations/*_app_role/migration.sql`. New tables get the app's normal grants automatically. If a new table must be append-only, add its `REVOKE` in that migration.
 - **Patient numbers** come from `allocatePatientNumber()` in `src/server/patient-number.ts`, inside the transaction that creates the patient. Never compute them with `max() + 1`.
 - **The Prisma client is generated** into `src/generated/prisma` (git-ignored) on `npm ci`. Run `npx prisma generate` after pulling a schema change.
+
+### Separate test databases (recommended)
+
+Tests write users, sessions and audit entries, and the audit log can't be cleaned up afterwards (that's the point). To keep your dev data tidy, give tests their own databases:
+
+```bash
+docker exec emr-dev-db psql -U emr_owner -d emr -c "CREATE DATABASE emr_test" -c "CREATE DATABASE emr_e2e"
+sed 's#/emr"#/emr_test"#' .env.local > .env.test.local   # used by npm test
+sed 's#/emr"#/emr_e2e"#'  .env.local > .env.e2e.local    # used by npm run test:e2e
+set -a; . ./.env.test.local; set +a; npx prisma migrate deploy
+set -a; . ./.env.e2e.local;  set +a; npx prisma migrate deploy && npx prisma db seed
+```
+
+## Auth in one paragraph
+
+Services are the only way in. Each starts with `requireUser()` (`src/server/auth/session.ts`), which re-reads the session and user from the database on every request and enforces the 30-minute idle and 12-hour absolute limits. Then `assertCan()` (`src/server/rbac.ts`) applies the permission matrix in `src/lib/shared/permissions.ts`, including the per-trip student switch. Writes and their audit entry (`src/server/audit.ts`) share one transaction. Better Auth only manages session rows and the cookie; its HTTP endpoints are deliberately not mounted. `tests/unit/route-guard.test.ts` fails CI if an exported service doesn't call `requireUser()` first.
 
 ## UI text
 

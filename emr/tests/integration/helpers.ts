@@ -21,4 +21,3 @@ export function uniqueTripCode() {
   return `01_2099_T${suffix}`;
 }
 
-export const fakeHash = (char: string) => char.repeat(64);

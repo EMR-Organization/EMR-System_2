@@ -15,5 +15,7 @@ export default defineConfig({
     setupFiles: ["tests/setup-env.ts"],
     // Integration tests share one database; run files one at a time.
     fileParallelism: false,
+    // Process better-auth through Vite so tests can stand in for next/headers.
+    server: { deps: { inline: ["better-auth", /@better-auth\//] } },
   },
 });

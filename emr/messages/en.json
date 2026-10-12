@@ -2,8 +2,105 @@
   "Metadata": {
     "title": "Humanity First EMR"
   },
+  "Common": {
+    "appName": "Humanity First EMR",
+    "loading": "Loading…",
+    "signOut": "Sign out",
+    "account": "Account",
+    "home": "Home"
+  },
   "Home": {
     "title": "Humanity First Electronic Medical Records",
-    "status": "The new system is being built. Sign-in arrives in a later phase."
+    "signedInAs": "Signed in as {name} ({role})",
+    "comingSoon": "Trips and patients arrive in the next phase.",
+    "goToAccount": "Your account and devices"
+  },
+  "Roles": {
+    "ADMIN": "Admin",
+    "DOCTOR": "Doctor",
+    "STUDENT": "Student"
+  },
+  "Fields": {
+    "name": "Full name",
+    "email": "Email",
+    "password": "Password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "role": "I am a…",
+    "code": "Reset code"
+  },
+  "Errors": {
+    "signedOut": "Your session has ended. Please sign in again.",
+    "forbidden": "You don't have access to that.",
+    "notFound": "That record wasn't found.",
+    "validation": "Please check the highlighted fields.",
+    "conflict": "This record changed since you opened it. Reload and try again.",
+    "rateLimited": "Too many attempts. Please wait a few minutes and try again.",
+    "internal": "Something went wrong. Please try again.",
+    "invalidCredentials": "Email or password is incorrect.",
+    "resetCodeInvalid": "That code is wrong, used, or expired. Ask an admin for a new one.",
+    "required": "Required.",
+    "email": "Enter a valid email address.",
+    "role": "Choose doctor or student.",
+    "code": "Codes are 8 characters.",
+    "doctorDomain": "Doctors must register with their HFSO email address.",
+    "wrongPassword": "That's not your current password.",
+    "mismatch": "The passwords don't match.",
+    "tooShort": "Use at least 12 characters. A few words together works well.",
+    "tooLong": "Use at most 128 characters.",
+    "common": "That password is too common or easy to guess.",
+    "containsEmail": "Don't use your email name in the password.",
+    "tooSimple": "Use more varied characters.",
+    "invalid": "This value isn't valid."
+  },
+  "Login": {
+    "title": "Sign in",
+    "submit": "Sign in",
+    "noAccount": "No account yet?",
+    "register": "Register",
+    "forgot": "Forgot your password?",
+    "reset": "Use a reset code",
+    "signedOutNotice": "You've been signed out."
+  },
+  "Register": {
+    "title": "Register",
+    "intro": "An admin must approve your account before you can use the system.",
+    "doctor": "Doctor",
+    "student": "Student",
+    "doctorHint": "Doctors must use their HFSO email.",
+    "passwordHint": "At least 12 characters. A short sentence is easy to remember and hard to guess.",
+    "submit": "Create account",
+    "haveAccount": "Already registered?",
+    "signIn": "Sign in"
+  },
+  "Pending": {
+    "title": "Account not active yet",
+    "pending": "Your account is waiting for an admin to approve it. Ask a trip admin to approve you, then sign in again.",
+    "disabled": "Your account is disabled. Ask an admin if you think this is a mistake.",
+    "registered": "Thanks for registering. An admin must approve your account before you can sign in.",
+    "back": "Back to sign in"
+  },
+  "Reset": {
+    "title": "Reset your password",
+    "intro": "Ask an admin for a reset code. It works once, for 30 minutes.",
+    "submit": "Set new password",
+    "done": "Your password has been changed and all your devices were signed out. Sign in with your new password.",
+    "back": "Back to sign in"
+  },
+  "Account": {
+    "title": "Your account",
+    "changePassword": "Change password",
+    "changePasswordHint": "Your other devices will be signed out.",
+    "changePasswordSubmit": "Change password",
+    "passwordChanged": "Password changed. Your other devices were signed out.",
+    "devices": "Signed-in devices",
+    "devicesHint": "Sign out any device you don't recognise or no longer use.",
+    "thisDevice": "This device",
+    "lastActive": "Last active {time}",
+    "signedIn": "Signed in {time}",
+    "unknownDevice": "Unknown device",
+    "revoke": "Sign out",
+    "revoked": "Device signed out."
   }
 }

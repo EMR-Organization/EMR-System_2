@@ -125,6 +125,8 @@ model ResetCode {
   codeHash   String
   expiresAt  DateTime
   usedAt     DateTime?
+  /// Wrong guesses against this code; it stops working after a few.
+  attempts   Int       @default(0)
   issuedById String    @db.Uuid
   createdAt  DateTime  @default(now())
 
@@ -230,13 +232,13 @@ model Patient {
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
 
-  trip          Trip            @relation(fields: [tripId], references: [id])
-  conditions    Condition[]
-  vitals        Vitals[]
-  diabetic      DiabeticEntry[]
-  visits        Visit[]
-  medications   Medication[]
-  photos        Photo[]
+  trip        Trip            @relation(fields: [tripId], references: [id])
+  conditions  Condition[]
+  vitals      Vitals[]
+  diabetic    DiabeticEntry[]
+  visits      Visit[]
+  medications Medication[]
+  photos      Photo[]
 
   @@unique([tripId, displayNumber])
   @@index([tripId, lastName, firstName])
