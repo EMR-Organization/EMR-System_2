@@ -20,7 +20,8 @@ import { requireUser } from "@/server/auth/session";
 import { db, type Tx } from "@/server/db";
 import { env } from "@/server/env";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "@/server/errors";
-import { assertCan } from "@/server/rbac";
+import { PERMISSIONS, type Permission } from "@/lib/shared/permissions";
+import { assertCan, can } from "@/server/rbac";
 import { parse } from "@/server/validation";
 
 // Accounts and sessions (spec: "Authentication and sessions").
@@ -301,6 +302,17 @@ export async function changePassword(input: unknown): Promise<void> {
   });
 }
 
+/**
+ * Which permissions you have (on a trip, if given). For deciding what to show;
+ * every service still checks for itself.
+ */
+export async function myPermissions(scope: unknown = {}): Promise<Permission[]> {
+  const actor = await requireUser();
+  const { tripId } = parse(z.object({ tripId: z.uuid().optional() }), scope);
+  const granted = await Promise.all(PERMISSIONS.map(async (p) => ((await can(actor, p, { tripId })) ? p : null)));
+  return granted.filter((p): p is Permission => p !== null);
+}
+
 export type SessionInfo = {
   id: string;
   createdAt: Date;
@@ -349,14 +361,15 @@ export type UserSummary = {
   status: UserStatus;
   createdAt: Date;
   approvedAt: Date | null;
-  lockedUntil: Date | null;
+  /** Locked out after too many wrong passwords, right now. */
+  locked: boolean;
 };
 
 export async function listUsers(filter: unknown = {}): Promise<UserSummary[]> {
   const actor = await requireUser();
   await assertCan(actor, "user.manage");
   const { status } = parse(z.object({ status: z.enum(["PENDING", "ACTIVE", "DISABLED"]).optional() }), filter);
-  return db.user.findMany({
+  const rows = await db.user.findMany({
     where: status ? { status } : undefined,
     orderBy: [{ status: "asc" }, { createdAt: "desc" }],
     select: {
@@ -371,6 +384,8 @@ export async function listUsers(filter: unknown = {}): Promise<UserSummary[]> {
       lockedUntil: true,
     },
   });
+  const now = Date.now();
+  return rows.map(({ lockedUntil, ...u }) => ({ ...u, locked: lockedUntil !== null && lockedUntil.getTime() > now }));
 }
 
 const approveSchema = z.object({
@@ -387,8 +402,8 @@ export async function approveUser(input: unknown): Promise<void> {
   await db.$transaction(async (tx) => {
     const user = await tx.user.findUnique({ where: { id: userId }, select: { role: true, status: true } });
     if (!user) throw new NotFoundError();
-    if (user.status !== "PENDING") throw new ConflictError("not pending");
-    if (user.role === "DOCTOR" && !specialty) throw new ValidationError({ specialty: ["required"] });
+    if (user.status !== "PENDING") throw new ConflictError("not pending", "notPending");
+    if (user.role === "DOCTOR" && !specialty) throw new ValidationError({ specialty: ["specialtyRequired"] });
 
     await tx.user.update({
       where: { id: userId },
@@ -415,7 +430,7 @@ export async function rejectUser(userId: unknown): Promise<void> {
   const id = parse(z.uuid(), userId);
   await db.$transaction(async (tx) => {
     const { count } = await tx.user.updateMany({ where: { id, status: "PENDING" }, data: { status: "DISABLED" } });
-    if (count === 0) throw new ConflictError("not pending");
+    if (count === 0) throw new ConflictError("not pending", "notPending");
     await audit(tx, actor, { action: "user.reject", entity: "User", entityId: id });
   });
 }
@@ -478,7 +493,7 @@ async function assertAnotherActiveAdmin(tx: Tx, exceptUserId: string) {
   const active = await tx.$queryRaw<{ id: string }[]>`
     SELECT "id" FROM "User" WHERE "role" = 'ADMIN' AND "status" = 'ACTIVE' ORDER BY "id" FOR UPDATE
   `;
-  if (!active.some((admin) => admin.id !== exceptUserId)) throw new ConflictError("last admin");
+  if (!active.some((admin) => admin.id !== exceptUserId)) throw new ConflictError("last admin", "lastAdmin");
 }
 
 /**

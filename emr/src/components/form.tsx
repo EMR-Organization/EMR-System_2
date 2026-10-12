@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { ComponentProps, ReactNode } from "react";
+import { startTransition, useActionState, type ComponentProps, type FormEvent, type ReactNode } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,21 @@ export type FormState =
   | { ok: true; data?: unknown }
   | { ok: false; code: string; messageKey: string; fieldErrors?: Record<string, string[]> }
   | null;
+
+/**
+ * Like useActionState, but keeps what the user typed when the server says no.
+ * (With <form action>, React clears every field after the action, so a wrong
+ * password would also wipe the email.) Use the returned onSubmit on the form.
+ */
+export function useServerForm(action: (prev: FormState, form: FormData) => Promise<FormState>) {
+  const [state, dispatch, pending] = useActionState<FormState, FormData>(action, null);
+  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    startTransition(() => dispatch(data));
+  };
+  return [state, onSubmit, pending] as const;
+}
 
 /** Turns a message key from the server into text; unknown keys get a generic message. */
 export function useErrorText() {

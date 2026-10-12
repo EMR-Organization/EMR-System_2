@@ -1,17 +1,21 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useActionState } from "react";
-import { Field, FormError, FormSuccess, type FormState } from "@/components/form";
+import { useEffect, useRef } from "react";
+import { Field, FormError, FormSuccess, useServerForm } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { changePasswordAction, revokeSessionAction } from "./actions";
 
 export function ChangePasswordForm() {
   const t = useTranslations("Account");
   const f = useTranslations("Fields");
-  const [state, action, pending] = useActionState<FormState, FormData>(changePasswordAction, null);
+  const [state, onSubmit, pending] = useServerForm(changePasswordAction);
+  const form = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (state?.ok) form.current?.reset();
+  }, [state]);
   return (
-    <form action={action} className="grid gap-4">
+    <form ref={form} onSubmit={onSubmit} className="grid gap-4">
       {state?.ok && <FormSuccess>{t("passwordChanged")}</FormSuccess>}
       <FormError state={state} />
       <Field name="currentPassword" label={f("currentPassword")} type="password" autoComplete="current-password" required state={state} />
@@ -26,9 +30,9 @@ export function ChangePasswordForm() {
 
 export function RevokeSessionButton({ sessionId }: { sessionId: string }) {
   const t = useTranslations("Account");
-  const [state, action, pending] = useActionState<FormState, FormData>(revokeSessionAction, null);
+  const [state, onSubmit, pending] = useServerForm(revokeSessionAction);
   return (
-    <form action={action}>
+    <form onSubmit={onSubmit}>
       <input type="hidden" name="sessionId" value={sessionId} />
       <FormError state={state} />
       <Button type="submit" variant="outline" size="sm" disabled={pending}>

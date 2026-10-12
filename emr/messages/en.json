@@ -7,13 +7,19 @@
     "loading": "Loading…",
     "signOut": "Sign out",
     "account": "Account",
-    "home": "Home"
+    "home": "Home",
+    "trips": "Trips",
+    "users": "Users",
+    "save": "Save",
+    "cancel": "Cancel",
+    "yes": "Yes",
+    "no": "No",
+    "saved": "Saved.",
+    "actions": "Actions",
+    "none": "None"
   },
   "Home": {
-    "title": "Humanity First Electronic Medical Records",
-    "signedInAs": "Signed in as {name} ({role})",
-    "comingSoon": "Trips and patients arrive in the next phase.",
-    "goToAccount": "Your account and devices"
+    "title": "Humanity First Electronic Medical Records"
   },
   "Roles": {
     "ADMIN": "Admin",
@@ -52,7 +58,14 @@
     "common": "That password is too common or easy to guess.",
     "containsEmail": "Don't use your email name in the password.",
     "tooSimple": "Use more varied characters.",
-    "invalid": "This value isn't valid."
+    "invalid": "This value isn't valid.",
+    "tripCodeTaken": "A trip already uses that month. Add a suffix such as B.",
+    "month": "Month must be 1–12.",
+    "year": "Enter a 4-digit year.",
+    "suffix": "Letters and digits only.",
+    "lastAdmin": "You can't disable the last admin.",
+    "notPending": "That account isn't waiting for approval any more.",
+    "specialtyRequired": "Choose a specialty for doctors."
   },
   "Login": {
     "title": "Sign in",
@@ -102,5 +115,109 @@
     "unknownDevice": "Unknown device",
     "revoke": "Sign out",
     "revoked": "Device signed out."
+  },
+  "Nav": {
+    "main": "Main",
+    "trips": "Trips",
+    "users": "Users",
+    "account": "Account",
+    "signedInAs": "{name} · {role}",
+    "menu": "Menu"
+  },
+  "Specialties": {
+    "DENTIST": "Dentist",
+    "PHYSICIAN": "Physician",
+    "PEDIATRICIAN": "Pediatrician"
+  },
+  "Statuses": {
+    "PENDING": "Pending",
+    "ACTIVE": "Active",
+    "DISABLED": "Disabled"
+  },
+  "Trips": {
+    "title": "Trips",
+    "empty": "No trips yet.",
+    "emptyStudent": "You're not switched on for any trip yet. Ask a doctor or admin to turn you on for this trip.",
+    "current": "Current",
+    "past": "Past",
+    "patients": "{count, plural, =0 {No patients} one {# patient} other {# patients}}",
+    "open": "Open",
+    "create": "New trip",
+    "createTitle": "Create a trip",
+    "name": "Trip name",
+    "namePlaceholder": "May 2026 Guatemala",
+    "location": "Location",
+    "month": "Month",
+    "year": "Year",
+    "suffix": "Suffix (only if another trip uses this month)",
+    "created": "Trip created.",
+    "markPast": "Mark as past",
+    "markCurrent": "Mark as current",
+    "codeHint": "Patient labels will look like 001_{code}."
+  },
+  "Trip": {
+    "overview": "Overview",
+    "members": "Students",
+    "patients": "Patients",
+    "patientsSoon": "Patient registration arrives in the next phase.",
+    "code": "Code {code}",
+    "statPatients": "Patients registered",
+    "statusCurrent": "Current trip",
+    "statusPast": "Past trip"
+  },
+  "Members": {
+    "title": "Students on this trip",
+    "intro": "Switch a student on to let them register patients and enter vitals on this trip. Switching them off blocks them on their very next click.",
+    "empty": "No approved students yet. Students appear here after an admin approves their account.",
+    "enabled": "On",
+    "disabled": "Off",
+    "toggleLabel": "Allow {name} on this trip",
+    "enabledBy": "Switched on by {name}",
+    "switchedOn": "{name} can now work on this trip.",
+    "switchedOff": "{name} is switched off for this trip."
+  },
+  "AdminUsers": {
+    "title": "Users",
+    "pending": "Waiting for approval",
+    "pendingEmpty": "Nobody is waiting.",
+    "all": "All users",
+    "approve": "Approve",
+    "reject": "Reject",
+    "specialty": "Specialty",
+    "chooseSpecialty": "Choose…",
+    "approved": "{name} approved.",
+    "rejected": "{name} rejected.",
+    "disable": "Disable",
+    "enable": "Enable",
+    "disabledMsg": "{name} disabled and signed out everywhere.",
+    "enabledMsg": "{name} enabled.",
+    "unlock": "Unlock",
+    "unlocked": "{name} can sign in again.",
+    "locked": "Locked",
+    "resetCode": "Reset code",
+    "resetCodeIssued": "Read this code to {name}. It works once, until {time}:",
+    "signOutAll": "Sign out everywhere",
+    "signedOutAll": "{name} signed out of {count, plural, one {# device} other {# devices}}.",
+    "you": "You",
+    "registered": "Registered {time}",
+    "colName": "Name",
+    "colRole": "Role",
+    "colStatus": "Status"
+  },
+  "Session": {
+    "expiringTitle": "Still there?",
+    "expiringBody": "You'll be signed out soon because of inactivity.",
+    "stay": "Stay signed in",
+    "expired": "You were signed out after 30 minutes without activity."
+  },
+  "NotFound": {
+    "title": "Not found",
+    "body": "This page doesn't exist, or you don't have access to it.",
+    "back": "Back to trips"
+  },
+  "ErrorPage": {
+    "title": "Something went wrong",
+    "body": "Please try again. If it keeps happening, tell the trip admin.",
+    "retry": "Try again"
   }
 }

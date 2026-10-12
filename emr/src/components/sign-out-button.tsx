@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { signOutAction } from "@/app/account/actions";
+import { signOutAction } from "@/app/(app)/account/actions";
 import { Button } from "@/components/ui/button";
 
 export async function SignOutButton() {

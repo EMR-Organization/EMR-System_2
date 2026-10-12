@@ -2,15 +2,14 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useActionState } from "react";
-import { Field, FormError, FormSuccess, type FormState } from "@/components/form";
+import { Field, FormError, FormSuccess, useServerForm } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { resetAction } from "./actions";
 
 export function ResetForm() {
   const t = useTranslations("Reset");
   const f = useTranslations("Fields");
-  const [state, action, pending] = useActionState<FormState, FormData>(resetAction, null);
+  const [state, onSubmit, pending] = useServerForm(resetAction);
 
   if (state?.ok) {
     return (
@@ -24,7 +23,7 @@ export function ResetForm() {
   }
 
   return (
-    <form action={action} className="grid gap-4">
+    <form onSubmit={onSubmit} className="grid gap-4">
       <FormError state={state} />
       <Field name="email" label={f("email")} type="email" autoComplete="username" required state={state} />
       <Field name="code" label={f("code")} autoComplete="one-time-code" autoCapitalize="characters" spellCheck={false} required state={state} />

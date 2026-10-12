@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useActionState } from "react";
-import { Field, FormError, type FormState } from "@/components/form";
+import { Field, FormError, useServerForm } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { signInAction } from "./actions";
 
@@ -12,10 +11,10 @@ export function LoginForm() {
   const t = useTranslations("Login");
   const f = useTranslations("Fields");
   const next = useSearchParams().get("next") ?? "/";
-  const [state, action, pending] = useActionState<FormState, FormData>(signInAction, null);
+  const [state, onSubmit, pending] = useServerForm(signInAction);
 
   return (
-    <form action={action} className="grid gap-4">
+    <form onSubmit={onSubmit} className="grid gap-4">
       <input type="hidden" name="next" value={next} />
       <FormError state={state} />
       <Field name="email" label={f("email")} type="email" autoComplete="username" required state={state} />

@@ -1,4 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 // Runs against the seeded e2e database (fake accounts, see prisma/seed.ts).
 const PASSWORD = "dev only password 2026";
@@ -17,12 +18,12 @@ test("signed-out visitors are sent to sign in", async ({ page }) => {
 
 test("a doctor signs in, sees their devices, and signs out", async ({ page, context }) => {
   await signIn(page, "physician@example.org");
-  await expect(page.getByText(/Signed in as Dr\. .+ \(Doctor\)/)).toBeVisible();
+  await expect(page).toHaveURL(/\/trips$/);
 
   const [cookie] = (await context.cookies()).filter((c) => c.name.includes("session_token"));
   expect(cookie).toMatchObject({ httpOnly: true, sameSite: "Strict", secure: true });
 
-  await page.getByRole("link", { name: "Your account and devices" }).click();
+  await page.getByRole("link", { name: "Account" }).click();
   await expect(page.getByRole("heading", { name: "Signed-in devices" })).toBeVisible();
   await expect(page.getByText("This device")).toBeVisible();
 
@@ -43,6 +44,7 @@ test("returns to the page you asked for", async ({ page }) => {
 test("a wrong password gets the generic message", async ({ page }) => {
   await signIn(page, "pediatrician@example.org", "not the right password");
   await expect(page.getByText("Email or password is incorrect.")).toBeVisible();
+  await expect(page.getByLabel("Email")).toHaveValue("pediatrician@example.org"); // not wiped by the failed attempt
 });
 
 test("a pending account sees its status only after the right password", async ({ page }) => {

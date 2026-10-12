@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useActionState } from "react";
-import { Field, FormError, useErrorText, type FormState } from "@/components/form";
+import { Field, FormError, useErrorText, useServerForm } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { registerAction } from "./actions";
 
@@ -11,11 +10,11 @@ export function RegisterForm() {
   const t = useTranslations("Register");
   const f = useTranslations("Fields");
   const errorText = useErrorText();
-  const [state, action, pending] = useActionState<FormState, FormData>(registerAction, null);
+  const [state, onSubmit, pending] = useServerForm(registerAction);
   const roleErrors = state && !state.ok ? (state.fieldErrors?.role ?? []) : [];
 
   return (
-    <form action={action} className="grid gap-4">
+    <form onSubmit={onSubmit} className="grid gap-4">
       <FormError state={state} />
       <fieldset className="grid gap-2">
         <legend className="mb-1 text-sm font-medium">{f("role")}</legend>

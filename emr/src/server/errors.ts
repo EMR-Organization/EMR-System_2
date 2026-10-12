@@ -49,8 +49,8 @@ export class ValidationError extends AppError {
 
 /** Someone else saved the record first (optimistic locking). */
 export class ConflictError extends AppError {
-  constructor(message?: string) {
-    super("CONFLICT", "conflict", message);
+  constructor(message?: string, messageKey = "conflict") {
+    super("CONFLICT", messageKey, message);
   }
 }
 
