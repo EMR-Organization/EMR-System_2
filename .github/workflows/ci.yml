@@ -39,9 +39,10 @@ jobs:
           cache: npm
           cache-dependency-path: emr/package-lock.json
       - run: npm ci
-      - run: npm audit --omit=dev --audit-level=high
       - run: npm run lint
       - run: npm run guards
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      # Audit what actually ships (the standalone server), not CLI tooling
+      - run: npm run audit:runtime

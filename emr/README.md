@@ -32,8 +32,9 @@ docker run -d --name emr-dev-db -e POSTGRES_USER=emr_owner -e POSTGRES_PASSWORD=
 | `npm test` | Vitest unit and integration tests |
 | `npm run test:e2e` | Playwright on desktop and phone viewports (port 3100; run `npx playwright install chromium` once) |
 | `npm run build` | Production build (`output: "standalone"`, used by the Windows bundle) |
+| `npm run audit:runtime` | After a build: fails if any high/critical advisory affects a package in the shipped server |
 
-CI runs the production dependency audit, lint, guards, typecheck, tests and build on every pull request.
+CI runs lint, guards, typecheck, tests, build and the runtime audit on every pull request.
 
 ## Guardrails (CI fails if you break these)
 
