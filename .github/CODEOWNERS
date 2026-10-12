@@ -1,0 +1,11 @@
+# Security-critical paths: the lead must review every change here.
+/emr/src/server/          @tchowdhury30
+/emr/prisma/              @tchowdhury30
+/emr/src/lib/shared/      @tchowdhury30
+/emr/deploy/              @tchowdhury30
+/emr/next.config.ts       @tchowdhury30
+/emr/src/proxy.ts         @tchowdhury30
+/emr/eslint.config.mjs    @tchowdhury30
+/emr/scripts/             @tchowdhury30
+/.github/                 @tchowdhury30
+**/actions.ts             @tchowdhury30

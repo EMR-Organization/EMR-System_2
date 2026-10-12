@@ -1,0 +1,13 @@
+import { getRequestConfig } from "next-intl/server";
+
+// English only for now. All UI text lives in messages/<locale>.json so Spanish can be added later
+// without touching components.
+export const defaultLocale = "en";
+
+export default getRequestConfig(async () => {
+  const locale = defaultLocale;
+  return {
+    locale,
+    messages: (await import(`../../messages/${locale}.json`)).default,
+  };
+});
