@@ -15,6 +15,8 @@ export const LIMITS = {
   resetCode: { max: 10, windowMs: 15 * 60 * 1000 },
   /** Registrations per IP. */
   register: { max: 10, windowMs: 60 * 60 * 1000 },
+  /** Password changes per user (keyed by user ID, not IP). */
+  changePassword: { max: 5, windowMs: 15 * 60 * 1000 },
 } as const;
 
 export function rateLimit(kind: keyof typeof LIMITS, key: string, now = Date.now()): void {

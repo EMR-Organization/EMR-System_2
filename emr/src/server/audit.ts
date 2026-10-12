@@ -1,5 +1,5 @@
 import "server-only";
-import { createHash } from "node:crypto";
+import { createHmac } from "node:crypto";
 import type { Actor } from "@/server/auth/session";
 import { db, type Tx } from "@/server/db";
 import { env } from "@/server/env";
@@ -8,8 +8,13 @@ import { env } from "@/server/env";
 //
 // - Written in the SAME transaction as the change it describes, so a change
 //   can't commit without its entry and a rolled-back change leaves none.
-// - Each entry's hash covers the previous entry's hash, so editing or deleting
-//   any old row breaks every hash after it; verifyChain() finds where.
+// - Each entry's hash is an HMAC (keyed with AUDIT_KEY, which is not in the
+//   database) over the previous entry's hash and its own fields. Editing or
+//   deleting a row breaks the chain from there on, and without the key nobody
+//   can recompute a consistent chain; verifyChain() finds where it breaks.
+// - Someone holding both the database and the key could rewrite the whole
+//   chain, so checkpoints (latestCheckpoint()) are also kept outside the
+//   database (backups, printouts) and verifyChain() can check against one.
 // - pg_advisory_xact_lock makes appends one-at-a-time so the chain can't fork.
 // - details holds IDs and field names only, never patient field values.
 
@@ -70,7 +75,7 @@ type HashedFields = {
   originNodeId: string;
 };
 
-export function hashEntry(prevHash: string, e: HashedFields): string {
+export function hashEntry(prevHash: string, e: HashedFields, key = env().AUDIT_KEY): string {
   const payload = canonicalJson([
     prevHash,
     e.ts.toISOString(),
@@ -84,7 +89,7 @@ export function hashEntry(prevHash: string, e: HashedFields): string {
     e.details ?? null,
     e.originNodeId,
   ]);
-  return createHash("sha256").update(payload).digest("hex");
+  return createHmac("sha256", key).update(payload).digest("hex");
 }
 
 // JSON with object keys sorted at every level. Postgres jsonb reorders keys, so
@@ -99,16 +104,31 @@ function canonicalJson(value: unknown): string {
 
 export type ChainResult =
   | { ok: true; checked: number; lastHash: string }
-  | { ok: false; checked: number; brokenAtId: string; reason: "hash" | "link" };
+  | { ok: false; checked: number; brokenAtId: string; reason: "hash" | "link" | "checkpoint" };
+
+/**
+ * A point in the log to keep OUTSIDE the database (in backups, on paper, on a
+ * USB stick). If the log is later rewritten, the entry at `id` won't have this
+ * hash any more.
+ */
+export type Checkpoint = { id: string; hash: string; count: number; at: string };
+
+export async function latestCheckpoint(): Promise<Checkpoint | null> {
+  const [last, count] = await Promise.all([
+    db.auditLog.findFirst({ orderBy: { id: "desc" }, select: { id: true, hash: true, ts: true } }),
+    db.auditLog.count(),
+  ]);
+  return last ? { id: last.id.toString(), hash: last.hash, count, at: last.ts.toISOString() } : null;
+}
 
 type StoredEntry = HashedFields & { id: bigint; prevHash: string; hash: string };
 
 /** Checks a run of entries that should follow prevHash. Pure, so tests can feed it tampered copies. */
-export function checkEntries(entries: StoredEntry[], prevHash = GENESIS_HASH): ChainResult {
+export function checkEntries(entries: StoredEntry[], prevHash = GENESIS_HASH, key = env().AUDIT_KEY): ChainResult {
   let checked = 0;
   for (const row of entries) {
     if (row.prevHash !== prevHash) return { ok: false, checked, brokenAtId: row.id.toString(), reason: "link" };
-    if (hashEntry(row.prevHash, row) !== row.hash) {
+    if (hashEntry(row.prevHash, row, key) !== row.hash) {
       return { ok: false, checked, brokenAtId: row.id.toString(), reason: "hash" };
     }
     prevHash = row.hash;
@@ -117,8 +137,18 @@ export function checkEntries(entries: StoredEntry[], prevHash = GENESIS_HASH): C
   return { ok: true, checked, lastHash: prevHash };
 }
 
-/** Recomputes every hash in the log, in order. Reports the first entry that doesn't match. */
-export async function verifyChain(batchSize = 1000): Promise<ChainResult> {
+/**
+ * Recomputes every hash in the log, in order, and reports the first entry that
+ * doesn't match. With a checkpoint, also fails if the entry it names is
+ * missing or has a different hash (which catches a whole-chain rewrite).
+ */
+export async function verifyChain(options: { checkpoint?: Pick<Checkpoint, "id" | "hash">; batchSize?: number } = {}): Promise<ChainResult> {
+  const { checkpoint, batchSize = 1000 } = options;
+  if (checkpoint) {
+    const row = await db.auditLog.findUnique({ where: { id: BigInt(checkpoint.id) }, select: { hash: true } });
+    if (row?.hash !== checkpoint.hash) return { ok: false, checked: 0, brokenAtId: checkpoint.id, reason: "checkpoint" };
+  }
+
   let prevHash = GENESIS_HASH;
   let cursor: bigint | undefined;
   let checked = 0;

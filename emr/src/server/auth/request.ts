@@ -1,5 +1,6 @@
 import "server-only";
 import { headers } from "next/headers";
+import { env } from "@/server/env";
 
 /** The current request's headers (works in server components and server actions). */
 export async function requestHeaders(): Promise<Headers> {
@@ -7,12 +8,16 @@ export async function requestHeaders(): Promise<Headers> {
 }
 
 /**
- * The client's IP address. In the field, Caddy is the only thing that can reach
- * the app (it binds 127.0.0.1) and it overwrites X-Forwarded-For with the real
- * client address, so the last entry is trustworthy. In development there's no
- * proxy and this is just a label for rate limiting.
+ * The client's IP address, used for rate limiting and the audit log.
+ *
+ * Only trusted with TRUST_PROXY=1, which the field setup sets because there the
+ * app listens on 127.0.0.1 and only Caddy can reach it; Caddy overwrites
+ * X-Forwarded-For with the real client address. Without it the header could be
+ * anything a client sends, so we ignore it and every request shares one label:
+ * the rate limits get stricter (one bucket), never bypassable.
  */
 export function clientIp(h: Headers): string {
+  if (!env().TRUST_PROXY) return "direct";
   const forwarded = h.get("x-forwarded-for");
   const last = forwarded?.split(",").at(-1)?.trim();
   return last || "unknown";

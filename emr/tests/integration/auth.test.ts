@@ -6,10 +6,11 @@ vi.mock("next/headers.js", () => import("./fake-request"));
 import { resetRateLimits } from "@/server/auth/rate-limit";
 import { getOptionalUser, requireUser } from "@/server/auth/session";
 import { db } from "@/server/db";
-import { AuthError, ForbiddenError, RateLimitError, ValidationError } from "@/server/errors";
+import { AuthError, ConflictError, ForbiddenError, RateLimitError, ValidationError } from "@/server/errors";
 import * as users from "@/server/services/users";
 import { browser } from "./fake-request";
 import { createUser, GOOD_PASSWORD } from "./fixtures";
+import { appClient } from "./helpers";
 
 // requireUser() is wrapped in React's cache(), which only memoizes inside a
 // React server request. In tests every call is a fresh lookup, like a new click.
@@ -348,5 +349,93 @@ describe("changePassword", () => {
     browser.useCookies(other);
     await expectSignedOut();
     browser.useCookies(current);
+  });
+});
+
+describe("review fixes", () => {
+  it("two admins disabling each other at once can't leave zero admins", async () => {
+    // Make A and B the only active admins for this test (other tests create admins too).
+    const others = await db.user.findMany({ where: { role: "ADMIN", status: "ACTIVE" }, select: { id: true } });
+    await db.user.updateMany({ where: { id: { in: others.map((o) => o.id) } }, data: { status: "DISABLED" } });
+    const other = await appClient();
+    try {
+      const a = await createUser({ role: "ADMIN", specialty: null });
+      const b = await createUser({ role: "ADMIN", specialty: null });
+      await signInAs(a);
+
+      // Admin B is halfway through disabling A in another connection: it has
+      // taken the admin locks and updated A, but not committed yet.
+      await other.query("BEGIN");
+      await other.query(`SELECT "id" FROM "User" WHERE "role" = 'ADMIN' AND "status" = 'ACTIVE' ORDER BY "id" FOR UPDATE`);
+      await other.query(`UPDATE "User" SET "status" = 'DISABLED' WHERE "id" = $1`, [a.id]);
+
+      // Meanwhile A disables B. It must wait for B's transaction, then see that B is the last admin.
+      const disableB = users.disableUser(b.id);
+      const outcome = disableB.then(
+        () => "done",
+        (err: unknown) => err,
+      );
+      await new Promise((r) => setTimeout(r, 300));
+      await other.query("COMMIT");
+
+      expect(await outcome).toBeInstanceOf(ConflictError);
+      expect(await db.user.count({ where: { id: { in: [a.id, b.id] }, status: "ACTIVE" } })).toBe(1);
+    } finally {
+      await other.query("ROLLBACK").catch(() => undefined);
+      await other.end();
+      await db.user.updateMany({ where: { id: { in: others.map((o) => o.id) } }, data: { status: "ACTIVE" } });
+    }
+  });
+
+  it("an admin can unlock a locked account; a doctor can't", async () => {
+    const locked = await createUser();
+    await db.user.update({ where: { id: locked.id }, data: { lockedUntil: new Date(Date.now() + 10 * 60 * 1000), failedLogins: 0 } });
+
+    await signInAs(await createUser());
+    await expect(users.unlockUser(locked.id)).rejects.toBeInstanceOf(ForbiddenError);
+
+    await signInAs(await createUser({ role: "ADMIN", specialty: null }));
+    await users.unlockUser(locked.id);
+
+    browser.reset();
+    await expect(users.signIn({ email: locked.email, password: locked.password })).resolves.toEqual({ status: "ACTIVE" });
+  });
+
+  it("the devices list leaves out sessions that have timed out from idling", async () => {
+    const user = await createUser();
+    const stale = (await signInAs(user)).jar;
+    browser.useCookies(stale);
+    const staleId = (await requireUser()).sessionId;
+    await signInAs(user);
+    await db.session.update({ where: { id: staleId }, data: { updatedAt: new Date(Date.now() - 31 * 60 * 1000) } });
+
+    const sessions = await users.listMySessions();
+    expect(sessions.map((s) => s.id)).not.toContain(staleId);
+    expect(sessions).toHaveLength(1);
+  });
+
+  it("limits password-change attempts per user", async () => {
+    await signInAs(await createUser());
+    for (let i = 0; i < 5; i++) {
+      await expect(users.changePassword({ currentPassword: `wrong guess ${i}`, newPassword: "a brand new long passphrase" })).rejects.toBeInstanceOf(
+        ValidationError,
+      );
+    }
+    await expect(users.changePassword({ currentPassword: "another guess", newPassword: "a brand new long passphrase" })).rejects.toBeInstanceOf(
+      RateLimitError,
+    );
+  });
+
+  it("two simultaneous registrations with one email both get the normal answer", async () => {
+    const email = `race-${crypto.randomUUID()}@example.org`;
+    const form = { name: "Race", email, password: GOOD_PASSWORD, role: "STUDENT" };
+    await expect(Promise.all([users.register(form), users.register(form)])).resolves.toEqual([{ status: "PENDING" }, { status: "PENDING" }]);
+    expect(await db.user.count({ where: { email } })).toBe(1);
+  });
+
+  it("signing out clears the cookie as well as the session", async () => {
+    await signInAs(await createUser());
+    await users.signOut();
+    expect([...browser.cookies().keys()].some((k) => k.includes("session_token"))).toBe(false);
   });
 });

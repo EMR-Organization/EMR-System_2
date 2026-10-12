@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "start:standalone": "node scripts/start-standalone.mjs",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
@@ -19,7 +20,8 @@
     "db:reset": "prisma migrate reset && tsx scripts/db-app-role.ts",
     "audit:runtime": "node scripts/audit-runtime.mjs",
     "postinstall": "prisma generate",
-    "create-admin": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/create-admin.ts"
+    "create-admin": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/create-admin.ts",
+    "audit:checkpoint": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/audit-checkpoint.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

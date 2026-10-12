@@ -42,6 +42,8 @@ docker run -d --name emr-dev-db -e POSTGRES_USER=emr_owner -e POSTGRES_PASSWORD=
 | `npm run db:seed` | Fake data (refuses when `NODE_ENV=production`) |
 | `npm run create-admin` | Creates an admin account (the only way one is created) |
 | `npm run db:reset` | Drop everything, re-migrate, re-seed |
+| `npm run audit:checkpoint` | Verifies the audit log and prints a checkpoint to keep outside the database (`-- <id> <hash>` checks against an earlier one) |
+| `npm run start:standalone` | Runs the built standalone server, as the field bundle does (e2e tests use it) |
 | `npm run build` | Production build (`output: "standalone"`, used by the Windows bundle) |
 | `npm run audit:runtime` | After a build: fails if any high/critical advisory affects a package in the shipped server |
 
@@ -72,6 +74,12 @@ sed 's#/emr"#/emr_e2e"#'  .env.local > .env.e2e.local    # used by npm run test:
 set -a; . ./.env.test.local; set +a; npx prisma migrate deploy
 set -a; . ./.env.e2e.local;  set +a; npx prisma migrate deploy && npx prisma db seed
 ```
+
+## Configuration notes
+
+- `BETTER_AUTH_SECRET` and `AUDIT_KEY` must be long random values. In production mode the server refuses the placeholders from `.env.example`, so `npm run start:standalone` and the e2e tests need real ones (generate with the command in `.env.example`).
+- `AUDIT_KEY` keys the audit-log hash chain. Changing it makes every existing entry fail verification, so never change it on a live install. After pulling the change that introduced it, reset your dev database (`npm run db:reset`) because older entries used plain SHA-256.
+- `TRUST_PROXY=1` tells the app to trust `X-Forwarded-For`. Only set it where the app is reachable solely through Caddy on 127.0.0.1 (the field setup, and the test env files). Otherwise leave it at `0`.
 
 ## Auth in one paragraph
 

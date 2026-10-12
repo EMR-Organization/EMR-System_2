@@ -12,7 +12,7 @@ import {
   signInSchema,
 } from "@/lib/shared/schemas/auth";
 import { audit, auditOnly } from "@/server/audit";
-import { auth } from "@/server/auth/auth";
+import { auth, SESSION_IDLE_MS } from "@/server/auth/auth";
 import { burnPasswordCheck, hashPassword, verifyPassword } from "@/server/auth/password";
 import { rateLimit } from "@/server/auth/rate-limit";
 import { clientIp, requestHeaders } from "@/server/auth/request";
@@ -44,6 +44,11 @@ function assertPasswordOk(password: string, email: string, field = "password") {
 function emailDomainAllowed(email: string): boolean {
   const domain = email.split("@")[1] ?? "";
   return env().ALLOWED_EMAIL_DOMAINS.includes(domain);
+}
+
+/** Prisma's "unique constraint failed" error. */
+function isUniqueViolation(err: unknown): boolean {
+  return (err as { code?: unknown } | null)?.code === "P2002";
 }
 
 async function setPassword(tx: Tx, userId: string, password: string) {
@@ -89,20 +94,25 @@ export async function register(input: unknown): Promise<RegisterResult> {
     return { status: "PENDING" };
   }
 
-  await db.$transaction(async (tx) => {
-    const user = await tx.user.create({
-      data: { email: data.email, name: data.name, role: data.role, status: "PENDING" },
+  try {
+    await db.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: { email: data.email, name: data.name, role: data.role, status: "PENDING" },
+      });
+      await tx.account.create({
+        data: { userId: user.id, accountId: user.id, providerId: CREDENTIAL_PROVIDER, password: passwordHash },
+      });
+      await audit(tx, { userId: user.id, ip }, {
+        action: "user.register",
+        entity: "User",
+        entityId: user.id,
+        details: { role: data.role },
+      });
     });
-    await tx.account.create({
-      data: { userId: user.id, accountId: user.id, providerId: CREDENTIAL_PROVIDER, password: passwordHash },
-    });
-    await audit(tx, { userId: user.id, ip }, {
-      action: "user.register",
-      entity: "User",
-      entityId: user.id,
-      details: { role: data.role },
-    });
-  });
+  } catch (err) {
+    // Someone registered the same email a moment ago: same answer as above.
+    if (!isUniqueViolation(err)) throw err;
+  }
   return { status: "PENDING" };
 }
 
@@ -252,17 +262,23 @@ export async function me(): Promise<Me> {
 export async function signOut(): Promise<void> {
   const actor = await requireUser();
   const h = await requestHeaders();
+  // Better Auth deletes the session row and clears the cookie. It runs first,
+  // while the session still exists, so the cookie is reliably cleared.
+  await auth()
+    .api.signOut({ headers: h })
+    .catch((err: unknown) => console.error("Better Auth signOut failed; removing the session directly", err));
   await db.$transaction(async (tx) => {
+    // Safety net in case the call above failed: the session must end regardless.
     await tx.session.deleteMany({ where: { id: actor.sessionId } });
     await audit(tx, actor, { action: "auth.signout", entity: "Session", entityId: actor.sessionId });
   });
-  // Clears the cookie. The session row is already gone, so this can't fail open.
-  await auth().api.signOut({ headers: h }).catch(() => undefined);
 }
 
 /** Changes your own password. Other devices are signed out; this one stays signed in. */
 export async function changePassword(input: unknown): Promise<void> {
   const actor = await requireUser();
+  // Keyed by user: a stolen session can't be used to guess the current password at speed.
+  rateLimit("changePassword", actor.id);
   const data = parse(changePasswordSchema, input);
   const account = await db.account.findFirst({
     where: { userId: actor.id, providerId: CREDENTIAL_PROVIDER },
@@ -297,7 +313,8 @@ export type SessionInfo = {
 
 async function sessionsFor(userId: string, currentSessionId: string | null): Promise<SessionInfo[]> {
   const rows = await db.session.findMany({
-    where: { userId, expiresAt: { gt: new Date() } },
+    // Only sessions that still work: not past 12 hours, and not idle past 30 minutes.
+    where: { userId, expiresAt: { gt: new Date() }, updatedAt: { gt: new Date(Date.now() - SESSION_IDLE_MS) } },
     orderBy: { updatedAt: "desc" },
     select: { id: true, createdAt: true, updatedAt: true, expiresAt: true, ipAddress: true, userAgent: true },
   });
@@ -411,10 +428,13 @@ export async function disableUser(userId: unknown): Promise<void> {
   if (id === actor.id) throw new ForbiddenError("cannot disable yourself");
 
   await db.$transaction(async (tx) => {
-    const user = await tx.user.findUnique({ where: { id }, select: { role: true, status: true } });
-    if (!user) throw new NotFoundError();
+    const target = await tx.user.findUnique({ where: { id }, select: { role: true } });
+    if (!target) throw new NotFoundError();
+    if (target.role === "ADMIN") await assertAnotherActiveAdmin(tx, id);
+
+    // Read the status after any lock above, so it reflects concurrent changes.
+    const user = await tx.user.findUniqueOrThrow({ where: { id }, select: { status: true } });
     if (user.status === "DISABLED") return;
-    if (user.role === "ADMIN") await assertAnotherActiveAdmin(tx, id);
 
     await tx.user.update({ where: { id }, data: { status: "DISABLED" } });
     const { count } = await tx.session.deleteMany({ where: { userId: id } });
@@ -436,9 +456,29 @@ export async function enableUser(userId: unknown): Promise<void> {
   });
 }
 
+/**
+ * Refuses if exceptUserId is the only active admin. Locks every active admin
+ * row first (in id order, so concurrent callers can't deadlock): two admins
+ * disabling each other at the same moment then run one after the other, and
+ * the second sees the first's change instead of both succeeding.
+ */
+/** Clears a sign-in lockout (5 wrong passwords) without waiting 15 minutes. */
+export async function unlockUser(userId: unknown): Promise<void> {
+  const actor = await requireUser();
+  await assertCan(actor, "user.manage");
+  const id = parse(z.uuid(), userId);
+  await db.$transaction(async (tx) => {
+    const { count } = await tx.user.updateMany({ where: { id }, data: { failedLogins: 0, lockedUntil: null } });
+    if (count === 0) throw new NotFoundError();
+    await audit(tx, actor, { action: "user.unlock", entity: "User", entityId: id });
+  });
+}
+
 async function assertAnotherActiveAdmin(tx: Tx, exceptUserId: string) {
-  const others = await tx.user.count({ where: { role: "ADMIN", status: "ACTIVE", id: { not: exceptUserId } } });
-  if (others === 0) throw new ConflictError("last admin");
+  const active = await tx.$queryRaw<{ id: string }[]>`
+    SELECT "id" FROM "User" WHERE "role" = 'ADMIN' AND "status" = 'ACTIVE' ORDER BY "id" FOR UPDATE
+  `;
+  if (!active.some((admin) => admin.id !== exceptUserId)) throw new ConflictError("last admin");
 }
 
 /**

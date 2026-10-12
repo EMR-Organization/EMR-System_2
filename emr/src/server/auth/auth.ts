@@ -19,7 +19,7 @@ export const SESSION_ABSOLUTE_SECONDS = 12 * 60 * 60;
 export const SESSION_IDLE_MS = 30 * 60 * 1000;
 
 function createAuth() {
-  const { BETTER_AUTH_SECRET } = env();
+  const { BETTER_AUTH_SECRET, TRUST_PROXY } = env();
   const secure = process.env.NODE_ENV === "production";
 
   return betterAuth({
@@ -68,9 +68,8 @@ function createAuth() {
       database: { generateId: "uuid" },
       useSecureCookies: secure,
       defaultCookieAttributes: { httpOnly: true, sameSite: "strict", secure, path: "/" },
-      // Caddy (the only thing that can reach the app in the field) sets this to
-      // the real client address and drops any value the client sent.
-      ipAddress: { ipAddressHeaders: ["x-forwarded-for"] },
+      // Same rule as clientIp(): the header is only meaningful behind Caddy.
+      ipAddress: TRUST_PROXY ? { ipAddressHeaders: ["x-forwarded-for"] } : { disableIpTracking: true },
     },
     // Same-origin only. Next.js also checks Origin on every server action.
     trustedOrigins: async (request) => {
