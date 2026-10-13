@@ -80,7 +80,12 @@
     "patientConflict": "Someone else saved this patient after you opened it. Reload to see their changes, then make yours again.",
     "notActiveStudent": "Only approved student accounts can be switched on for a trip.",
     "notDisabled": "That account isn't disabled.",
-    "tripClosed": "This trip is marked as past. Only admins can change its records."
+    "tripClosed": "This trip is marked as past. Only admins can change its records.",
+    "photoType": "Only JPEG, PNG or WebP photos can be uploaded.",
+    "photoUnreadable": "That image couldn't be read. Try another photo.",
+    "photoTooLarge": "Photos must be 5 MB or smaller.",
+    "medicationConflict": "This medication was already changed. Reload and try again.",
+    "pastDate": "That date is in the past."
   },
   "Login": {
     "title": "Sign in",
@@ -189,7 +194,8 @@
     "riskLow": "Low",
     "riskUnknown": "Not assessed",
     "bySpecialty": "By specialty",
-    "closedNotice": "This trip is marked as past. Its records are read-only; only admins can change them."
+    "closedNotice": "This trip is marked as past. Its records are read-only; only admins can change them.",
+    "queueTab": "My patients"
   },
   "Members": {
     "title": "Students on this trip",
@@ -331,7 +337,11 @@
     "deleteHint": "Hides this patient from every list. Nothing is erased and the number is never reused. Type {label} to confirm.",
     "deleteConfirm": "Type the patient number",
     "deleted": "Patient {label} deleted.",
-    "originLabel": "Fallback number {label}"
+    "originLabel": "Fallback number {label}",
+    "diagnosisTab": "Diagnosis",
+    "medicationsTab": "Medications",
+    "visitsTab": "Visits",
+    "photosTab": "Photos"
   },
   "Vitals": {
     "add": "Record vital signs",
@@ -385,5 +395,92 @@
     "save": "Add condition",
     "saved": "Condition added.",
     "empty": "No known conditions."
+  },
+  "Diagnosis": {
+    "title": "Trip diagnosis",
+    "none": "No diagnosis recorded yet.",
+    "seenBy": "Seen by: {specialty}",
+    "chiefComplaint": "Chief complaint",
+    "diagnosis": "Diagnosis",
+    "treatment": "Treatment plan",
+    "save": "Save diagnosis",
+    "saved": "Diagnosis saved.",
+    "lastUpdated": "Last updated {time}"
+  },
+  "Medications": {
+    "title": "Medications",
+    "active": "Active",
+    "discontinued": "Discontinued",
+    "none": "No medications.",
+    "prescribe": "Prescribe",
+    "name": "Medication",
+    "otherName": "Medication name",
+    "dosage": "Dosage",
+    "dosagePlaceholder": "e.g. 500 mg",
+    "frequency": "Frequency",
+    "route": "Route",
+    "startDate": "Start date",
+    "prescribedFor": "Prescribed for",
+    "instructions": "Instructions",
+    "notes": "Notes",
+    "save": "Prescribe",
+    "saved": "Medication prescribed.",
+    "started": "Started {date}",
+    "ended": "Ended {date}",
+    "for": "For {reason}",
+    "discontinue": "Discontinue",
+    "discontinueReason": "Reason",
+    "discontinueReasonHint": "For a mistake, write “Entered in error”.",
+    "confirmDiscontinue": "Confirm",
+    "discontinuedMsg": "Medication discontinued.",
+    "reasonShown": "Reason: {reason}"
+  },
+  "Visits": {
+    "title": "Visit history",
+    "none": "No visits yet.",
+    "add": "Add a visit",
+    "visitType": "Visit type",
+    "date": "Date",
+    "chiefComplaint": "Chief complaint",
+    "symptoms": "Symptoms",
+    "diagnosis": "Diagnosis",
+    "treatment": "Treatment",
+    "followUpDate": "Follow-up date",
+    "notes": "Notes",
+    "save": "Save visit",
+    "saved": "Visit saved.",
+    "followUp": "Follow-up {date}",
+    "tripVisit": "Trip visit",
+    "prescribed": "Prescribed: {list}"
+  },
+  "Photos": {
+    "title": "Photos",
+    "none": "No photos yet.",
+    "upload": "Add a photo",
+    "file": "Photo",
+    "fileHint": "JPEG, PNG or WebP, up to 5 MB. Location and camera details are removed.",
+    "kind": "Type",
+    "profile": "Profile photo",
+    "medical": "Medical photo",
+    "category": "Category",
+    "description": "Description",
+    "takenOn": "Taken on",
+    "notes": "Notes",
+    "save": "Upload",
+    "uploading": "Uploading…",
+    "saved": "Photo added.",
+    "viewFull": "Open full size",
+    "alt": "{kind}: {description}"
+  },
+  "Queue": {
+    "title": "My patients",
+    "titleFor": "Patients for {specialty}",
+    "intro": "Patients sent to your specialty on this trip, waiting first. You can still open any patient from the patient list.",
+    "choose": "Choose a specialty",
+    "empty": "No patients sent to {specialty} yet.",
+    "waiting": "Waiting",
+    "seen": "Seen",
+    "meds": "{count, plural, one {# medication} other {# medications}}",
+    "diagnosed": "Diagnosis recorded"
   }
 }

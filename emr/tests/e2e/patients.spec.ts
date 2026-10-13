@@ -1,5 +1,5 @@
 import type { Browser, Page } from "@playwright/test";
-import { expect, newDevice, test } from "./fixtures";
+import { expect, expectNoHorizontalScroll, newDevice, test } from "./fixtures";
 
 const PASSWORD = "dev only password 2026";
 const TRIP = "May 2026 Guatemala";
@@ -42,6 +42,8 @@ test("a student registers a patient and records intake", async ({ browser }) => 
 
   // Vitals: weight in pounds, BMI computed on the server.
   await page.getByRole("link", { name: "Vitals" }).click();
+  await expect(page.getByRole("heading", { name: "Record vital signs" })).toBeVisible();
+  await expectNoHorizontalScroll(page);
   await page.getByLabel("Systolic (mmHg)").fill("130");
   await page.getByLabel("Diastolic (mmHg)").fill("85");
   await page.getByLabel("Weight", { exact: true }).fill("154");
@@ -70,7 +72,7 @@ test("a student registers a patient and records intake", async ({ browser }) => 
 
   // Found in the list by name and by number.
   await page.getByRole("link", { name: TRIP }).first().click();
-  await page.getByRole("link", { name: "Patients" }).click();
+  await page.getByRole("link", { name: "Patients", exact: true }).click();
   await page.getByRole("searchbox").or(page.getByLabel("Search by name or number")).fill(last);
   await page.getByRole("button", { name: "Search" }).click();
   await expect(page.getByRole("link", { name: new RegExp(`${last}, Rosa`) })).toBeVisible();

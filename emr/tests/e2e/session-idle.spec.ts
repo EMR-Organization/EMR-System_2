@@ -31,7 +31,7 @@ async function openPatientList(page: Page, email: string) {
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/trips$/);
   await page.getByRole("link", { name: "May 2026 Guatemala" }).first().click();
-  await page.getByRole("navigation", { name: "May 2026 Guatemala" }).getByRole("link", { name: "Patients" }).click();
+  await page.getByRole("navigation", { name: "May 2026 Guatemala" }).getByRole("link", { name: "Patients", exact: true }).click();
   await expect(page).toHaveURL(/\/patients$/);
 }
 
