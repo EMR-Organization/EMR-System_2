@@ -8,6 +8,8 @@ export default getRequestConfig(async () => {
   const locale = defaultLocale;
   return {
     locale,
+    // The hub's own clock and time zone; everyone using it is in the same place.
+    timeZone: process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone,
     messages: (await import(`../../messages/${locale}.json`)).default,
   };
 });

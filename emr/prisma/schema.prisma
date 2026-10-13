@@ -1,0 +1,450 @@
+// Database schema for the Humanity First EMR. The design is in the
+// "Data model" section of the HF EMR Technical Spec.
+//
+// Conventions:
+// - UUID primary keys everywhere, so records made on a fallback laptop never
+//   collide with the hub's.
+// - Patient-data tables carry originNodeId (which machine created the row),
+//   createdById, createdAt and updatedAt.
+// - Patients are never hard-deleted or renumbered (deletedAt + displayNumber).
+// - Grants, the emr_app role and CHECK constraints live in raw SQL in
+//   prisma/migrations/*_app_role/migration.sql, because Prisma can't express them.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------- accounts
+
+enum Role {
+  ADMIN
+  DOCTOR
+  STUDENT
+}
+
+enum Specialty {
+  DENTIST
+  PHYSICIAN
+  PEDIATRICIAN
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  DISABLED
+}
+
+/// Better Auth's user table plus our own fields. Email is stored lowercase.
+model User {
+  id            String     @id @default(uuid()) @db.Uuid
+  email         String     @unique
+  name          String
+  emailVerified Boolean    @default(false)
+  image         String?
+  role          Role       @default(STUDENT)
+  /// Set by the admin at approval, for doctors only.
+  specialty     Specialty?
+  status        UserStatus @default(PENDING)
+  approvedById  String?    @db.Uuid
+  approvedAt    DateTime?
+  failedLogins  Int        @default(0)
+  lockedUntil   DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  approvedBy User?  @relation("UserApprovedBy", fields: [approvedById], references: [id])
+  approved   User[] @relation("UserApprovedBy")
+
+  sessions       Session[]
+  accounts       Account[]
+  resetCodes     ResetCode[]  @relation("ResetCodeUser")
+  issuedCodes    ResetCode[]  @relation("ResetCodeIssuer")
+  memberships    TripMember[] @relation("TripMemberUser")
+  enabledMembers TripMember[] @relation("TripMemberEnabledBy")
+}
+
+/// One row per signed-in device. Deleting a row signs that device out.
+model Session {
+  id        String   @id @default(uuid()) @db.Uuid
+  token     String   @unique
+  userId    String   @db.Uuid
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  /// Bumped on activity; requireUser() enforces the 30-minute idle timeout from it.
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// Better Auth's credential table. For email/password sign-in, `password` holds the argon2id hash.
+model Account {
+  id                    String    @id @default(uuid()) @db.Uuid
+  accountId             String
+  providerId            String
+  userId                String    @db.Uuid
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// Better Auth's verification table (unused by email/password today, but the library expects it).
+model Verification {
+  id         String   @id @default(uuid()) @db.Uuid
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
+
+/// Admin-issued one-time password reset code. Only the hash is stored.
+model ResetCode {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @db.Uuid
+  codeHash   String
+  expiresAt  DateTime
+  usedAt     DateTime?
+  /// Wrong guesses against this code; it stops working after a few.
+  attempts   Int       @default(0)
+  issuedById String    @db.Uuid
+  createdAt  DateTime  @default(now())
+
+  user     User @relation("ResetCodeUser", fields: [userId], references: [id], onDelete: Cascade)
+  issuedBy User @relation("ResetCodeIssuer", fields: [issuedById], references: [id])
+
+  @@index([userId])
+}
+
+// ------------------------------------------------------------------- trips
+
+model Trip {
+  id                String   @id @default(uuid()) @db.Uuid
+  /// Month and year as MM_YYYY (e.g. 05_2026). Used in patient labels like 001_05_2026.
+  code              String   @unique
+  name              String
+  month             Int
+  year              Int
+  location          String
+  active            Boolean  @default(true)
+  /// Next patient number to hand out. Only ever incremented, see allocatePatientNumber().
+  nextPatientNumber Int      @default(1)
+  createdById       String?  @db.Uuid
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  members  TripMember[]
+  patients Patient[]
+}
+
+/// The student on/off switch, per trip.
+model TripMember {
+  id          String    @id @default(uuid()) @db.Uuid
+  tripId      String    @db.Uuid
+  userId      String    @db.Uuid
+  enabled     Boolean   @default(false)
+  enabledById String?   @db.Uuid
+  enabledAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  trip      Trip  @relation(fields: [tripId], references: [id])
+  user      User  @relation("TripMemberUser", fields: [userId], references: [id], onDelete: Cascade)
+  enabledBy User? @relation("TripMemberEnabledBy", fields: [enabledById], references: [id])
+
+  @@unique([tripId, userId])
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------- patients
+
+enum AgeUnit {
+  YEARS
+  MONTHS
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum WaterRisk {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum Severity {
+  MILD
+  MODERATE
+  SEVERE
+}
+
+model Patient {
+  id                String     @id @default(uuid()) @db.Uuid
+  tripId            String     @db.Uuid
+  /// Unique per trip, never reused. Shown as 001_05_2026 by formatPatientLabel().
+  displayNumber     Int
+  /// The label a fallback laptop gave this patient before it was merged into the hub, if any.
+  originLabel       String?
+  firstName         String
+  lastName          String
+  dateOfBirth       DateTime?  @db.Date
+  ageValue          Int?
+  ageUnit           AgeUnit?
+  gender            Gender
+  phone             String?
+  address           String?
+  emergencyContact  String?
+  waterSource       String?
+  waterRiskRating   WaterRisk?
+  waterHistory      String[]
+  waterNotes        String?
+  assignedSpecialty Specialty
+  /// Optimistic lock: updates must send the version they loaded.
+  version           Int        @default(1)
+  deletedAt         DateTime?
+  deletedById       String?    @db.Uuid
+  originNodeId      String
+  createdById       String     @db.Uuid
+  updatedById       String?    @db.Uuid
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  trip        Trip            @relation(fields: [tripId], references: [id])
+  conditions  Condition[]
+  vitals      Vitals[]
+  diabetic    DiabeticEntry[]
+  visits      Visit[]
+  medications Medication[]
+  photos      Photo[]
+
+  @@unique([tripId, displayNumber])
+  @@index([tripId, lastName, firstName])
+}
+
+model Condition {
+  id            String    @id @default(uuid()) @db.Uuid
+  patientId     String    @db.Uuid
+  condition     String
+  diagnosisDate DateTime? @db.Date
+  severity      Severity?
+  notes         String?
+  originNodeId  String
+  createdById   String    @db.Uuid
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  patient Patient @relation(fields: [patientId], references: [id])
+
+  @@index([patientId])
+}
+
+model Vitals {
+  id               String   @id @default(uuid()) @db.Uuid
+  patientId        String   @db.Uuid
+  takenAt          DateTime
+  bpSystolic       Int?
+  bpDiastolic      Int?
+  heartRate        Int?
+  temperatureC     Float?
+  weightKg         Float?
+  heightCm         Float?
+  /// Computed on the server from weightKg and heightCm.
+  bmi              Float?
+  respiratoryRate  Int?
+  oxygenSaturation Int?
+  notes            String?
+  originNodeId     String
+  createdById      String   @db.Uuid
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  patient Patient @relation(fields: [patientId], references: [id])
+
+  @@index([patientId, takenAt])
+}
+
+model DiabeticEntry {
+  id               String   @id @default(uuid()) @db.Uuid
+  patientId        String   @db.Uuid
+  takenAt          DateTime
+  bloodGlucose     Int?
+  glucoseTiming    String?
+  insulinType      String?
+  insulinDose      Float?
+  bpSystolic       Int?
+  bpDiastolic      Int?
+  totalCholesterol Int?
+  ldl              Int?
+  hdl              Int?
+  triglycerides    Int?
+  hba1c            Float?
+  notes            String?
+  originNodeId     String
+  createdById      String   @db.Uuid
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  patient Patient @relation(fields: [patientId], references: [id])
+
+  @@index([patientId, takenAt])
+}
+
+model Visit {
+  id             String     @id @default(uuid()) @db.Uuid
+  patientId      String     @db.Uuid
+  /// TRUE for the one visit that represents this patient's trip (as in the old app), NULL otherwise.
+  /// Never FALSE: a CHECK constraint enforces that, and @@unique below then allows only one per patient.
+  tripVisit      Boolean?
+  visitType      String
+  date           DateTime   @db.Date
+  chiefComplaint String?
+  symptoms       String?
+  diagnosis      String?
+  treatment      String?
+  specialty      Specialty?
+  followUpDate   DateTime?  @db.Date
+  notes          String?
+  version        Int        @default(1)
+  originNodeId   String
+  createdById    String     @db.Uuid
+  updatedById    String?    @db.Uuid
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  patient     Patient      @relation(fields: [patientId], references: [id])
+  medications Medication[]
+
+  @@unique([patientId, tripVisit])
+  @@index([patientId, date])
+}
+
+enum MedicationStatus {
+  ACTIVE
+  DISCONTINUED
+}
+
+model Medication {
+  id                String           @id @default(uuid()) @db.Uuid
+  patientId         String           @db.Uuid
+  visitId           String?          @db.Uuid
+  name              String
+  dosage            String?
+  frequency         String?
+  route             String?
+  startDate         DateTime?        @db.Date
+  endDate           DateTime?        @db.Date
+  prescribedFor     String?
+  instructions      String?
+  notes             String?
+  status            MedicationStatus @default(ACTIVE)
+  discontinueReason String?
+  version           Int              @default(1)
+  originNodeId      String
+  createdById       String           @db.Uuid
+  updatedById       String?          @db.Uuid
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  patient Patient @relation(fields: [patientId], references: [id])
+  visit   Visit?  @relation(fields: [visitId], references: [id])
+
+  @@index([patientId])
+}
+
+enum PhotoKind {
+  PROFILE
+  MEDICAL
+}
+
+/// The image itself lives on disk under data/photos; this row points to it.
+model Photo {
+  id           String    @id @default(uuid()) @db.Uuid
+  patientId    String    @db.Uuid
+  kind         PhotoKind
+  /// Random filename relative to data/photos. Never built from user input.
+  filePath     String    @unique
+  mimeType     String
+  sizeBytes    Int
+  category     String?
+  description  String?
+  notes        String?
+  takenOn      DateTime? @db.Date
+  originNodeId String
+  createdById  String    @db.Uuid
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  patient Patient @relation(fields: [patientId], references: [id])
+
+  @@index([patientId])
+}
+
+// ------------------------------------------------------------ audit & sync
+
+/// Append-only, hash-chained. The app role cannot UPDATE or DELETE rows here.
+/// details holds IDs and field names only, never patient field values.
+model AuditLog {
+  id           BigInt   @id @default(autoincrement())
+  ts           DateTime @default(now())
+  userId       String?  @db.Uuid
+  sessionId    String?  @db.Uuid
+  action       String
+  entity       String
+  entityId     String?
+  tripId       String?  @db.Uuid
+  ip           String?
+  details      Json?
+  /// The node that wrote the entry (the hub, or a fallback laptop merged in later).
+  originNodeId String
+  prevHash     String
+  hash         String   @unique
+
+  @@index([ts])
+  @@index([userId, ts])
+  @@index([entity, entityId])
+}
+
+enum ConflictStatus {
+  OPEN
+  KEPT_HUB
+  TOOK_INCOMING
+}
+
+/// A record a fallback bundle changed that the hub had also changed. Resolved by an admin.
+model SyncConflict {
+  id           String         @id @default(uuid()) @db.Uuid
+  entity       String
+  entityId     String         @db.Uuid
+  hubVersion   Int
+  incoming     Json
+  sourceNodeId String
+  status       ConflictStatus @default(OPEN)
+  resolvedById String?        @db.Uuid
+  resolvedAt   DateTime?
+  createdAt    DateTime       @default(now())
+
+  @@index([status])
+}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
+import { Toaster } from "@/components/ui/sonner";
 import { getLocale, getTranslations } from "next-intl/server";
 import "./globals.css";
 
@@ -29,7 +30,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <NextIntlClientProvider>{children}</NextIntlClientProvider>
+        <NextIntlClientProvider>
+          {children}
+          <Toaster richColors position="top-center" />
+        </NextIntlClientProvider>
       </body>
     </html>
   );

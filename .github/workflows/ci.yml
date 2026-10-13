@@ -28,7 +28,12 @@ jobs:
           --health-interval 5s
           --health-retries 10
     env:
-      DATABASE_URL: postgresql://emr_owner:emr_ci_password@localhost:5432/emr
+      # The app and tests connect as the restricted role; migrations as the owner.
+      DATABASE_URL: postgresql://emr_app:emr_app_ci_password@localhost:5432/emr
+      DATABASE_OWNER_URL: postgresql://emr_owner:emr_ci_password@localhost:5432/emr
+      BETTER_AUTH_SECRET: ci-only-secret-not-for-real-use-0123456789
+      AUDIT_KEY: ci-only-audit-key-not-for-real-use-0123456789
+      TRUST_PROXY: "1"
       ALLOWED_EMAIL_DOMAINS: example.org
       NODE_ID: ci
     steps:
@@ -42,7 +47,59 @@ jobs:
       - run: npm run lint
       - run: npm run guards
       - run: npm run typecheck
+      - run: npx prisma migrate deploy
+      - run: npm run db:app-role
+      # Fails if schema.prisma changed without a matching migration
+      - run: npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code
       - run: npm test
       - run: npm run build
       # Audit what actually ships (the standalone server), not CLI tooling
       - run: npm run audit:runtime
+
+  e2e:
+    # Browser tests against the standalone server the field bundle runs, on a seeded database.
+    needs: check
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: emr_owner
+          POSTGRES_PASSWORD: emr_ci_password
+          POSTGRES_DB: emr
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U emr_owner -d emr"
+          --health-interval 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://emr_app:emr_app_ci_password@localhost:5432/emr
+      DATABASE_OWNER_URL: postgresql://emr_owner:emr_ci_password@localhost:5432/emr
+      ALLOWED_EMAIL_DOMAINS: example.org
+      NODE_ID: ci-e2e
+      TRUST_PROXY: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: emr/package-lock.json
+      # The server runs in production mode, which rightly refuses placeholder secrets.
+      - name: Generate per-run secrets
+        run: |
+          echo "BETTER_AUTH_SECRET=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
+          echo "AUDIT_KEY=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
+      - run: npm ci
+      - run: npx prisma migrate deploy
+      - run: npm run db:app-role
+      - run: npx prisma db seed
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: emr/playwright-report
+          retention-days: 7
