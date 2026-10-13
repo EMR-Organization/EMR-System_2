@@ -149,7 +149,7 @@ export async function setStudentEnabled(input: unknown): Promise<void> {
     ]);
     if (!trip || !student) throw new NotFoundError();
     // Only approved students have a switch; doctors and admins reach every trip anyway.
-    if (student.role !== "STUDENT" || (enabled && student.status !== "ACTIVE")) throw new ConflictError("not an active student");
+    if (student.role !== "STUDENT" || (enabled && student.status !== "ACTIVE")) throw new ConflictError("not an active student", "notActiveStudent");
 
     const stamp = enabled ? { enabledById: actor.id, enabledAt: new Date() } : {};
     await tx.tripMember.upsert({

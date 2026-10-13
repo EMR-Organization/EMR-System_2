@@ -135,7 +135,9 @@ describe("student switch", () => {
     const doctor2 = await createUser();
     const pendingStudent = await createUser({ role: "STUDENT", specialty: null, status: "PENDING" });
     await signInAs(await createUser());
-    await expect(trips.setStudentEnabled({ tripId: trip.id, userId: doctor2.id, enabled: true })).rejects.toBeInstanceOf(ConflictError);
+    await expect(trips.setStudentEnabled({ tripId: trip.id, userId: doctor2.id, enabled: true })).rejects.toMatchObject({
+      messageKey: "notActiveStudent",
+    });
     await expect(trips.setStudentEnabled({ tripId: trip.id, userId: pendingStudent.id, enabled: true })).rejects.toBeInstanceOf(
       ConflictError,
     );

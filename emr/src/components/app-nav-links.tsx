@@ -7,12 +7,16 @@ import { cn } from "cn";
 export type NavItem = { href: string; label: string };
 
 /** Nav links with the current section highlighted. */
-/** `exact`: only the exact path is "current" (for tabs where one href is a prefix of the others). */
-export function NavLinks({ items, className, exact = false }: { items: NavItem[]; className?: string; exact?: boolean }) {
+/**
+ * `exactFirst`: the first item (e.g. a trip's Overview, whose href is a prefix
+ * of the other tabs) is only current on its exact path.
+ */
+export function NavLinks({ items, className, exactFirst = false }: { items: NavItem[]; className?: string; exactFirst?: boolean }) {
   const pathname = usePathname();
   return (
     <ul className={cn("flex gap-1", className)}>
-      {items.map((item) => {
+      {items.map((item, i) => {
+        const exact = exactFirst && i === 0;
         const active = pathname === item.href || (!exact && pathname.startsWith(`${item.href}/`));
         return (
           <li key={item.href}>

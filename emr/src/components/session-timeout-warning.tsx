@@ -1,45 +1,50 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { touchSessionAction } from "@/app/(app)/actions";
+import { signOutAction } from "@/app/(app)/account/actions";
 import { Button } from "@/components/ui/button";
+import { idleMs, noteServerActivity, startActivityTracking } from "./activity";
 
-// The server ends a session after 30 minutes without requests. Someone typing a
-// long note makes no requests, so warn them 5 minutes before and offer to stay.
-// This is only a courtesy: the server enforces the timeout either way.
+// The server signs a session out after 30 minutes without requests. This warns
+// 5 minutes before, counting real input on this device (not just page
+// changes), and at 30 minutes signs out properly, so the session is gone on
+// the server and the back button can't bring the record back.
 const IDLE_LIMIT_MS = 30 * 60 * 1000;
 const WARN_AT_MS = 25 * 60 * 1000;
 const CHECK_EVERY_MS = 10_000;
 
 export function SessionTimeoutWarning() {
   const t = useTranslations("Session");
-  const router = useRouter();
   const pathname = usePathname();
-  const lastActivity = useRef(0);
   const [warning, setWarning] = useState(false);
   const [pending, startTransition] = useTransition();
 
-  // Navigating makes a request, which counts as activity on the server too.
-  useEffect(() => {
-    lastActivity.current = Date.now();
-  }, [pathname]);
+  useEffect(() => startActivityTracking(), []);
+  // Navigating made a request, so the server saw activity too.
+  useEffect(() => noteServerActivity(), [pathname]);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      const idle = Date.now() - lastActivity.current;
-      if (idle >= IDLE_LIMIT_MS) router.push(`/login?next=${encodeURIComponent(pathname)}`);
-      else setWarning(idle >= WARN_AT_MS);
+      const idle = idleMs();
+      if (idle >= IDLE_LIMIT_MS) {
+        clearInterval(timer);
+        void signOutAction();
+      } else {
+        setWarning(idle >= WARN_AT_MS);
+      }
     }, CHECK_EVERY_MS);
     return () => clearInterval(timer);
-  }, [pathname, router]);
+  }, []);
 
   function stay() {
+    // Clicking the button is itself input, which resets the idle clock.
     startTransition(async () => {
       const result = await touchSessionAction();
-      if (!result.ok) return router.push(`/login?next=${encodeURIComponent(pathname)}`);
-      lastActivity.current = Date.now();
+      if (!result.ok) return void signOutAction();
+      noteServerActivity();
       setWarning(false);
     });
   }

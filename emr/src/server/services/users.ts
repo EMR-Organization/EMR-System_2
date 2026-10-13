@@ -465,7 +465,7 @@ export async function enableUser(userId: unknown): Promise<void> {
     const user = await tx.user.findUnique({ where: { id }, select: { status: true, approvedAt: true } });
     if (!user) throw new NotFoundError();
     // A rejected registration was never approved; it has to be approved, not just enabled.
-    if (user.status !== "DISABLED" || !user.approvedAt) throw new ConflictError("not disabled");
+    if (user.status !== "DISABLED" || !user.approvedAt) throw new ConflictError("not disabled", "notDisabled");
     await tx.user.update({ where: { id }, data: { status: "ACTIVE", failedLogins: 0, lockedUntil: null } });
     await audit(tx, actor, { action: "user.enable", entity: "User", entityId: id });
   });

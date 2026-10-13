@@ -55,6 +55,21 @@ export const MATRIX: Record<Permission, Record<RoleName, Grant>> = {
   "audit.read": { STUDENT: "none", DOCTOR: "none", ADMIN: "all" },
 };
 
+/**
+ * Permissions that change a trip's clinical records. On a past (inactive) trip
+ * only admins have them: the trip's records are read-only for everyone else.
+ */
+export const TRIP_WRITE_PERMISSIONS: ReadonlySet<Permission> = new Set([
+  "patient.register",
+  "vitals.write",
+  "diabetic.write",
+  "condition.write",
+  "photo.write",
+  "diagnosis.write",
+  "medication.write",
+  "visit.write",
+]);
+
 /** Whether the role has the permission at all (ignoring which trip). For UI only. */
 export function roleHas(role: RoleName, permission: Permission): boolean {
   return MATRIX[permission][role] !== "none";
