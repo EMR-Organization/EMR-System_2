@@ -17,10 +17,10 @@ export async function updatePatientAction(patientId: string, version: number, _p
   return result;
 }
 
-export async function deletePatientAction(patientId: string, tripId: string, _prev: unknown, form: FormData): Promise<ActionResult<never>> {
+export async function deletePatientAction(patientId: string, _prev: unknown, form: FormData): Promise<ActionResult<never>> {
   const result = await toActionResult(() => softDeletePatient({ patientId, confirmLabel: form.get("confirmLabel") }));
   if (!result.ok) return result;
-  redirect(`/trips/${tripId}/patients`);
+  redirect(`/trips/${result.data.tripId}/patients`);
 }
 
 export async function addVitalsAction(patientId: string, _prev: unknown, form: FormData): Promise<ActionResult<{ id: string; bmi: number | null }>> {

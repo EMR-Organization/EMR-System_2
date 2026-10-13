@@ -1,5 +1,5 @@
 import "server-only";
-import { MATRIX, type Permission } from "@/lib/shared/permissions";
+import { MATRIX, TRIP_WRITE_PERMISSIONS, type Permission } from "@/lib/shared/permissions";
 import type { Actor } from "@/server/auth/session";
 import { db } from "@/server/db";
 import { ForbiddenError } from "@/server/errors";
@@ -13,10 +13,17 @@ export type { Permission };
  * For trip-scoped work pass the trip the data belongs to (looked up from the
  * record, never taken from the request). Students must be switched on for that
  * trip, checked in the database on every call.
+ *
+ * Past trips are read-only: on an inactive trip, changing clinical records
+ * (TRIP_WRITE_PERMISSIONS) is for admins only.
  */
 export async function assertCan(actor: Actor, permission: Permission, scope: { tripId?: string } = {}): Promise<void> {
   const grant = MATRIX[permission]?.[actor.role] ?? "none";
   if (grant === "none") throw new ForbiddenError(`${actor.role} lacks ${permission}`);
+
+  if (scope.tripId && actor.role !== "ADMIN" && TRIP_WRITE_PERMISSIONS.has(permission) && !(await isTripActive(scope.tripId))) {
+    throw new ForbiddenError(`trip ${scope.tripId} is past`, "tripClosed");
+  }
   if (grant === "all") return;
 
   // grant === "trip": the student needs an enabled membership for this trip.
@@ -49,6 +56,12 @@ export async function accessibleTripIds(actor: Actor): Promise<"all" | string[]>
     select: { tripId: true },
   });
   return memberships.map((m) => m.tripId);
+}
+
+/** A trip that doesn't exist counts as active here; the service then reports it as not found. */
+async function isTripActive(tripId: string): Promise<boolean> {
+  const trip = await db.trip.findUnique({ where: { id: tripId }, select: { active: true } });
+  return trip?.active ?? true;
 }
 
 async function isEnabledForTrip(userId: string, tripId: string): Promise<boolean> {

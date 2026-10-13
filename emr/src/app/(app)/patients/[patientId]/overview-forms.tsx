@@ -47,9 +47,9 @@ export function EditPatient({ patientId, version, defaults, today }: { patientId
   );
 }
 
-export function DeletePatient({ patientId, tripId, label }: { patientId: string; tripId: string; label: string }) {
+export function DeletePatient({ patientId, label }: { patientId: string; label: string }) {
   const t = useTranslations("Patient");
-  const [state, onSubmit, pending] = useServerForm(deletePatientAction.bind(null, patientId, tripId));
+  const [state, onSubmit, pending] = useServerForm(deletePatientAction.bind(null, patientId));
   return (
     <form onSubmit={onSubmit} className="grid gap-3">
       <p className="text-sm text-muted-foreground">{t("deleteHint", { label })}</p>

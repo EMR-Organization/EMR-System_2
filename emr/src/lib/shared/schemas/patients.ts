@@ -129,6 +129,10 @@ export const vitalsSchema = z
     if (v.bpSystolic !== undefined && v.bpDiastolic !== undefined && v.bpDiastolic >= v.bpSystolic) {
       ctx.addIssue({ code: "custom", path: ["bpDiastolic"], message: "bpOrder" });
     }
+    // 660 is the pound limit; in kilograms that's 300.
+    if (v.weight !== undefined && v.weightUnit === "KG" && v.weight > 300) {
+      ctx.addIssue({ code: "custom", path: ["weight"], message: "outOfRange" });
+    }
   });
 
 export const diabeticSchema = z
@@ -153,6 +157,9 @@ export const diabeticSchema = z
     if (measured.every((m) => m === undefined)) ctx.addIssue({ code: "custom", path: ["form"], message: "noMeasurements" });
     if ((d.bpSystolic === undefined) !== (d.bpDiastolic === undefined)) {
       ctx.addIssue({ code: "custom", path: ["bpDiastolic"], message: "bpPair" });
+    }
+    if (d.bpSystolic !== undefined && d.bpDiastolic !== undefined && d.bpDiastolic >= d.bpSystolic) {
+      ctx.addIssue({ code: "custom", path: ["bpDiastolic"], message: "bpOrder" });
     }
   });
 

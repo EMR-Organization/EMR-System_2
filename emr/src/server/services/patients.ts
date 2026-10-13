@@ -42,17 +42,19 @@ const recordSelect = {
   version: true,
   createdAt: true,
   updatedAt: true,
-  trip: { select: { code: true, name: true } },
+  trip: { select: { code: true, name: true, active: true } },
 } as const satisfies Prisma.PatientSelect;
 
 export type PatientRecord = Omit<Prisma.PatientGetPayload<{ select: typeof recordSelect }>, "trip"> & {
   label: string;
   tripCode: string;
   tripName: string;
+  /** False for a past trip, whose records only admins may change. */
+  tripActive: boolean;
 };
 
 function toRecord({ trip, ...p }: Prisma.PatientGetPayload<{ select: typeof recordSelect }>): PatientRecord {
-  return { ...p, label: formatPatientLabel(p.displayNumber, trip.code), tripCode: trip.code, tripName: trip.name };
+  return { ...p, label: formatPatientLabel(p.displayNumber, trip.code), tripCode: trip.code, tripName: trip.name, tripActive: trip.active };
 }
 
 /**
@@ -97,7 +99,12 @@ export async function registerPatient(input: unknown): Promise<{ id: string; lab
   });
 }
 
-/** The patient's record. Every view is audited (who looked at whom, when). */
+/**
+ * The patient's record. Every view is audited (who looked at whom, when).
+ * Pages showing any part of a record (vitals, conditions...) call this first,
+ * so each opened record leaves an audit entry; the list* functions in the
+ * other services don't audit on their own.
+ */
 export async function getPatient(patientId: unknown): Promise<PatientRecord> {
   const actor = await requireUser();
   const id = parse(z.uuid(), patientId);
@@ -207,7 +214,7 @@ export async function updatePatient(input: unknown): Promise<{ version: number }
       where: { id: patientId, version, deletedAt: null },
       data: { ...data, version: { increment: 1 }, updatedById: actor.id },
     });
-    if (count === 0) throw new ConflictError("version mismatch");
+    if (count === 0) throw new ConflictError("version mismatch", "patientConflict");
 
     await audit(tx, actor, {
       action: "patient.update",
@@ -224,11 +231,11 @@ export async function updatePatient(input: unknown): Promise<{ version: number }
  * Hides a patient (admin only). Nothing is erased and the number is never
  * reused, unlike the old app, which renumbered everyone after a delete.
  */
-export async function softDeletePatient(input: unknown): Promise<void> {
+export async function softDeletePatient(input: unknown): Promise<{ tripId: string }> {
   const actor = await requireUser();
   const { patientId, confirmLabel } = parse(z.object({ patientId: z.uuid(), confirmLabel: z.string().trim() }), input);
 
-  await db.$transaction(async (tx) => {
+  return db.$transaction(async (tx) => {
     const { tripId } = await patientForAccess(actor, patientId, "patient.delete", tx);
     const patient = await tx.patient.findUniqueOrThrow({ where: { id: patientId }, select: { displayNumber: true, trip: { select: { code: true } } } });
     // Typing the patient's number guards against deleting the wrong record.
@@ -237,5 +244,6 @@ export async function softDeletePatient(input: unknown): Promise<void> {
     }
     await tx.patient.update({ where: { id: patientId }, data: { deletedAt: new Date(), deletedById: actor.id } });
     await audit(tx, actor, { action: "patient.delete", entity: "Patient", entityId: patientId, tripId });
+    return { tripId };
   });
 }

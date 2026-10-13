@@ -5,7 +5,7 @@ vi.mock("next/headers.js", () => import("./fake-request"));
 
 import { resetRateLimits } from "@/server/auth/rate-limit";
 import { db } from "@/server/db";
-import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "@/server/errors";
+import { ForbiddenError, NotFoundError, ValidationError } from "@/server/errors";
 import * as conditions from "@/server/services/conditions";
 import * as dashboard from "@/server/services/dashboard";
 import * as diabetic from "@/server/services/diabetic";
@@ -158,9 +158,9 @@ describe("updatePatient", () => {
     const saved = await patients.updatePatient({ ...basic(trip.id), patientId: id, version: 1, phone: "5555-0101" });
     expect(saved).toEqual({ version: 2 });
     // A second person still has version 1 open and saves: refused, nothing changes.
-    await expect(patients.updatePatient({ ...basic(trip.id), patientId: id, version: 1, phone: "5555-9999" })).rejects.toBeInstanceOf(
-      ConflictError,
-    );
+    await expect(patients.updatePatient({ ...basic(trip.id), patientId: id, version: 1, phone: "5555-9999" })).rejects.toMatchObject({
+      messageKey: "patientConflict",
+    });
     expect(await db.patient.findUniqueOrThrow({ where: { id } })).toMatchObject({ phone: "5555-0101", version: 2 });
 
     const entry = await db.auditLog.findFirstOrThrow({ where: { action: "patient.update", entityId: id } });
@@ -188,7 +188,7 @@ describe("softDeletePatient", () => {
 
     await signInAs(await createUser({ role: "ADMIN", specialty: null }));
     await expect(patients.softDeletePatient({ patientId: first.id, confirmLabel: "001" })).rejects.toBeInstanceOf(ValidationError);
-    await patients.softDeletePatient({ patientId: first.id, confirmLabel: first.label });
+    await expect(patients.softDeletePatient({ patientId: first.id, confirmLabel: first.label })).resolves.toEqual({ tripId: trip.id });
 
     await expect(patients.getPatient(first.id)).rejects.toBeInstanceOf(NotFoundError);
     expect((await patients.listPatients({ tripId: trip.id })).total).toBe(0);
@@ -229,6 +229,7 @@ describe("vitals", () => {
       { bpSystolic: 80, bpDiastolic: 120 }, // reversed
       { temperatureC: "hot" },
       { heartRate: 70, takenAt: "2999-01-01T00:00:00Z" },
+      { weight: 400, weightUnit: "KG" }, // over 300 kg
     ]) {
       await expect(vitals.addVitals({ patientId: id, ...bad }), JSON.stringify(bad)).rejects.toBeInstanceOf(ValidationError);
     }
@@ -245,6 +246,11 @@ describe("diabetic entries and conditions", () => {
     expect(await diabetic.listDiabeticEntries(id)).toMatchObject([{ bloodGlucose: 180, glucoseTiming: "Fasting", insulinDose: 10 }]);
     expect(await conditions.listConditions(id)).toMatchObject([{ condition: "Hypertension", severity: "MODERATE" }]);
     await expect(diabetic.addDiabeticEntry({ patientId: id, glucoseTiming: "Whenever" })).rejects.toBeInstanceOf(ValidationError);
+    await expect(diabetic.addDiabeticEntry({ patientId: id, bpSystolic: 80, bpDiastolic: 120 })).rejects.toMatchObject({
+      fieldErrors: { bpDiastolic: ["bpOrder"] },
+    });
+    // 400 lb is fine (181 kg).
+    await expect(vitals.addVitals({ patientId: id, weight: 400, weightUnit: "LB" })).resolves.toMatchObject({ id: expect.any(String) });
   });
 });
 
@@ -258,12 +264,21 @@ describe("tripStats", () => {
     // Phase 5 records diagnoses; simulate one on patient a's trip visit.
     await db.visit.updateMany({ where: { patientId: a.id, tripVisit: true }, data: { diagnosis: "Common cold", specialty: "PHYSICIAN" } });
 
+    // A dentist patient seen by a physician: seen counts for the physician, and
+    // the patient is no longer waiting for the dentist.
+    const crossover = await patients.registerPatient(basic(trip.id, { assignedSpecialty: "DENTIST" }));
+    await db.visit.updateMany({ where: { patientId: crossover.id, tripVisit: true }, data: { diagnosis: "Toothache referred", specialty: "PHYSICIAN" } });
+
     const stats = await dashboard.tripStats(trip.id);
     expect(stats).toMatchObject({
-      total: 3,
-      registeredToday: 3,
-      bySpecialty: { PHYSICIAN: { assigned: 1, seen: 1 }, DENTIST: { assigned: 2, seen: 0 }, PEDIATRICIAN: { assigned: 0, seen: 0 } },
-      waterRisk: { HIGH: 1, LOW: 1, MEDIUM: 0, unknown: 1 },
+      total: 4,
+      registeredToday: 4,
+      bySpecialty: {
+        PHYSICIAN: { assigned: 1, seen: 2, waiting: 0 },
+        DENTIST: { assigned: 3, seen: 0, waiting: 2 },
+        PEDIATRICIAN: { assigned: 0, seen: 0, waiting: 0 },
+      },
+      waterRisk: { HIGH: 1, LOW: 1, MEDIUM: 0, unknown: 2 },
     });
   });
 });

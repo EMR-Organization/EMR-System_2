@@ -41,7 +41,7 @@
     "forbidden": "You don't have access to that.",
     "notFound": "That record wasn't found.",
     "validation": "Please check the highlighted fields.",
-    "conflict": "Someone else saved this patient after you opened it. Reload to see their changes, then make yours again.",
+    "conflict": "This record changed after you opened it. Reload and try again.",
     "rateLimited": "Too many attempts. Please wait a few minutes and try again.",
     "internal": "Something went wrong. Please try again.",
     "invalidCredentials": "Email or password is incorrect.",
@@ -76,7 +76,11 @@
     "noMeasurements": "Enter at least one measurement.",
     "bpPair": "Enter both systolic and diastolic.",
     "bpOrder": "Diastolic must be lower than systolic.",
-    "confirmMismatch": "That doesn't match the patient number."
+    "confirmMismatch": "That doesn't match the patient number.",
+    "patientConflict": "Someone else saved this patient after you opened it. Reload to see their changes, then make yours again.",
+    "notActiveStudent": "Only approved student accounts can be switched on for a trip.",
+    "notDisabled": "That account isn't disabled.",
+    "tripClosed": "This trip is marked as past. Only admins can change its records."
   },
   "Login": {
     "title": "Sign in",
@@ -184,7 +188,8 @@
     "riskMedium": "Medium",
     "riskLow": "Low",
     "riskUnknown": "Not assessed",
-    "bySpecialty": "By specialty"
+    "bySpecialty": "By specialty",
+    "closedNotice": "This trip is marked as past. Its records are read-only; only admins can change them."
   },
   "Members": {
     "title": "Students on this trip",

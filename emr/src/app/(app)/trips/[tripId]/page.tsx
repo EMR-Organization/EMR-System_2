@@ -58,7 +58,7 @@ async function Overview({ params }: Pick<PageProps<"/trips/[tripId]">, "params">
                   <span>{sp(s)}</span>
                   <span className="text-muted-foreground">
                     {t("statSeen")} {stats.bySpecialty[s].seen} · {t("statWaiting")}{" "}
-                    {Math.max(0, stats.bySpecialty[s].assigned - stats.bySpecialty[s].seen)}
+                    {stats.bySpecialty[s].waiting}
                   </span>
                 </li>
               ))}

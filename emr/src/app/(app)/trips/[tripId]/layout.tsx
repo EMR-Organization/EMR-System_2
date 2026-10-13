@@ -40,6 +40,7 @@ async function TripHeader({ params }: Pick<LayoutProps<"/trips/[tripId]">, "para
           {trip.location} · {t("code", { code: trip.code })}
         </p>
       </div>
+      {!trip.active && <p className="rounded-lg border border-dashed px-3 py-2 text-sm text-muted-foreground">{t("closedNotice")}</p>}
       <nav aria-label={trip.name} className="border-b pb-2">
         <NavLinks items={tabs} exactFirst className="overflow-x-auto" />
       </nav>

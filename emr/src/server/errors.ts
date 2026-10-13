@@ -27,8 +27,8 @@ export class AuthError extends AppError {
 
 /** Signed in, but not allowed to do this. */
 export class ForbiddenError extends AppError {
-  constructor(message?: string) {
-    super("FORBIDDEN", "forbidden", message);
+  constructor(message?: string, messageKey = "forbidden") {
+    super("FORBIDDEN", messageKey, message);
   }
 }
 

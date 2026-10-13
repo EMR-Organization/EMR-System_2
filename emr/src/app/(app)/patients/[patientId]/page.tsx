@@ -41,7 +41,8 @@ async function Overview({ params, searchParams }: Props) {
 
   return (
     <div className="grid gap-4">
-      {typeof registered === "string" && <FormSuccessBanner>{f("registered", { label: registered })}</FormSuccessBanner>}
+      {/* Only this patient's own number: the URL can't put arbitrary text in the banner. */}
+      {registered === p.label && <FormSuccessBanner>{f("registered", { label: p.label })}</FormSuccessBanner>}
       <Card>
         <CardHeader>
           <CardTitle>
@@ -80,7 +81,7 @@ async function Overview({ params, searchParams }: Props) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <DeletePatient patientId={p.id} tripId={p.tripId} label={p.label} />
+            <DeletePatient patientId={p.id} label={p.label} />
           </CardContent>
         </Card>
       )}

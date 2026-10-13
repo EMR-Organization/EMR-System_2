@@ -22,6 +22,7 @@ export default function PatientLayout({ children, params }: Props) {
 
 async function PatientHeader({ params }: Pick<Props, "params">) {
   const t = await getTranslations("Patient");
+  const tt = await getTranslations("Trip");
   const g = await getTranslations("Gender");
   const sp = await getTranslations("Specialties");
   const r = await getTranslations("Risk");
@@ -54,6 +55,7 @@ async function PatientHeader({ params }: Pick<Props, "params">) {
           {p.originLabel && <span>{t("originLabel", { label: p.originLabel })}</span>}
         </p>
       </div>
+      {!p.tripActive && <p className="rounded-lg border border-dashed px-3 py-2 text-sm text-muted-foreground">{tt("closedNotice")}</p>}
       <nav aria-label={t("details")} className="border-b pb-2">
         <NavLinks items={tabs} exactFirst className="overflow-x-auto" />
       </nav>
