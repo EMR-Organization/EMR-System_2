@@ -23,7 +23,10 @@ async function TripHeader({ params }: Pick<LayoutProps<"/trips/[tripId]">, "para
   // getTrip throws ForbiddenError for a student who isn't switched on for this trip.
   const [trip, permissions] = await orSignIn(() => Promise.all([getTrip(tripId), myPermissions({ tripId })]));
 
-  const tabs: NavItem[] = [{ href: `/trips/${trip.id}`, label: t("overview") }];
+  const tabs: NavItem[] = [
+    { href: `/trips/${trip.id}`, label: t("overview") },
+    { href: `/trips/${trip.id}/patients`, label: t("patientsTab") },
+  ];
   if (permissions.includes("trip.members.toggle")) tabs.push({ href: `/trips/${trip.id}/members`, label: t("members") });
 
   return (
@@ -38,7 +41,7 @@ async function TripHeader({ params }: Pick<LayoutProps<"/trips/[tripId]">, "para
         </p>
       </div>
       <nav aria-label={trip.name} className="border-b pb-2">
-        <NavLinks items={tabs} exact className="overflow-x-auto" />
+        <NavLinks items={tabs} exactFirst className="overflow-x-auto" />
       </nav>
     </header>
   );
