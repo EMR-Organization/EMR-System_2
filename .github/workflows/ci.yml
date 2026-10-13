@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: emr
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: emr_owner
+          POSTGRES_PASSWORD: emr_ci_password
+          POSTGRES_DB: emr
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U emr_owner -d emr"
+          --health-interval 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://emr_owner:emr_ci_password@localhost:5432/emr
+      ALLOWED_EMAIL_DOMAINS: example.org
+      NODE_ID: ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: emr/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run guards
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      # Audit what actually ships (the standalone server), not CLI tooling
+      - run: npm run audit:runtime
