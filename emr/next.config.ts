@@ -14,6 +14,12 @@ export const securityHeaders = [
 const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
+  // The standalone output is what ships to the field. File tracing follows the
+  // app's dynamic file paths (photos, backups) and would copy the project's
+  // local data/ folder (backups, photos) and sources into it; none of it belongs there.
+  outputFileTracingExcludes: {
+    "*": ["data/**", "dist/**", "deploy/**", "tests/**", "scripts/**", "src/**", "prisma/**", "*.md", "components.json", "tsconfig.json", ".env*"],
+  },
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {

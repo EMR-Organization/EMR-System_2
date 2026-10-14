@@ -49,6 +49,8 @@ const schema = z.object({
   SYNC_KEY: secret("SYNC_KEY"),
   /** Where encrypted backups are written (kept 14 days). */
   BACKUP_DIR: z.string().min(1).default("data/backups"),
+  /** Caddy's root certificate (field install), offered on /setup so devices can trust the hub's HTTPS. */
+  CADDY_ROOT_CERT: z.string().optional(),
   /** Folder holding pg_dump / pg_restore when they aren't on PATH (the Windows bundle's PostgreSQL bin). */
   PG_BIN_DIR: z.string().optional(),
   /**

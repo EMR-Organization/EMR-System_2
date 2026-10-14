@@ -4,6 +4,8 @@ on:
   pull_request:
   push:
     branches: [main]
+  # Run by hand to get a field bundle (the "windows" job uploads it).
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -118,4 +120,122 @@ jobs:
         with:
           name: playwright-report
           path: emr/playwright-report
+          retention-days: 7
+
+  windows:
+    # Builds the Windows field bundle and runs it the way the field does: setup,
+    # start-hub, then checks that only HTTPS faces the network; backup and
+    # provisioning; stop; then a fallback laptop set up from the hub's
+    # provisioning file, run standalone, exporting a sync bundle.
+    needs: check
+    runs-on: windows-latest
+    timeout-minutes: 45
+    env:
+      EMR_NO_PAUSE: "1"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: emr/package-lock.json
+      # Node, PostgreSQL and Caddy downloads; build-bundle checks their pinned checksums every time.
+      - uses: actions/cache@v4
+        with:
+          path: emr/deploy/.cache
+          key: field-downloads-${{ hashFiles('emr/deploy/versions.json') }}
+      - run: npm ci
+      - name: Build the field bundle
+        # No secrets at build time; the database client only needs a URL to exist (it connects on first use).
+        env:
+          DATABASE_URL: postgresql://build:build@127.0.0.1:1/build
+        run: node deploy/build-bundle.mjs --out dist/EMR
+      - uses: actions/upload-artifact@v4
+        if: github.event_name != 'pull_request'
+        with:
+          name: EMR-windows-${{ github.sha }}
+          path: emr/dist/EMR
+          retention-days: 30
+
+      - name: Hub - setup
+        shell: pwsh
+        run: |
+          robocopy dist\EMR C:\EMR /E /NFL /NDL /NJH /NJS /NP | Out-Null
+          if ($LASTEXITCODE -ge 8) { exit 1 }
+          "CI Admin`nci.admin@example.org`nCorrect horse battery 2026" | Set-Content -Encoding ascii $env:RUNNER_TEMP\admin.txt
+          C:\EMR\setup.bat -Role hub -EmailDomains example.org -AdminFile $env:RUNNER_TEMP\admin.txt -NoRename -NonInteractive
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          if (-not (Get-NetFirewallRule -DisplayName 'HF EMR (HTTPS from local network)' -ErrorAction SilentlyContinue)) { throw 'no firewall rule' }
+          if (-not (Get-ScheduledTask -TaskName 'HF EMR nightly backup' -ErrorAction SilentlyContinue)) { throw 'no backup task' }
+          if (-not (Select-String -Path C:\EMR\config\emr.env -Pattern '^SYNC_KEY="[A-Za-z0-9_-]{40,}"$' -Quiet)) { throw 'no generated SYNC_KEY' }
+
+      - name: Hub - start and check what the network can reach
+        shell: pwsh
+        run: |
+          . C:\EMR\scripts\common.ps1
+          $ErrorActionPreference = 'Stop'
+          Start-Process cmd.exe -ArgumentList '/c', 'C:\EMR\start-hub.bat > C:\EMR\data\logs\start-hub.out 2>&1' -WindowStyle Hidden
+          $ca = 'C:\EMR\data\caddy\pki\authorities\local\root.crt'
+          $deadline = (Get-Date).AddMinutes(4)
+          while (-not ((Test-Path $ca) -and (Test-Port '127.0.0.1' 443)) -and (Get-Date) -lt $deadline) { Start-Sleep 2 }
+          Get-Content C:\EMR\data\logs\start-hub.out
+          $ip = Get-LanIp
+          $name = Get-HubName
+          Write-Host "LAN address $ip, name $name"
+          foreach ($url in @('https://localhost/login', "https://$ip/login")) {
+            curl.exe --fail -sS -o NUL --cacert $ca $url
+            if ($LASTEXITCODE) { throw "HTTPS failed: $url" }
+          }
+          curl.exe --fail -sS -o NUL --cacert $ca --resolve "${name}:443:127.0.0.1" "https://$name/login"
+          if ($LASTEXITCODE) { throw "HTTPS failed for $name" }
+          # The certificate devices install is served before sign-in and is Caddy's root.
+          curl.exe --fail -sS -o $env:RUNNER_TEMP\served.crt --cacert $ca https://localhost/setup/root.crt
+          $served = New-Object Security.Cryptography.X509Certificates.X509Certificate2 "$env:RUNNER_TEMP\served.crt"
+          $root = New-Object Security.Cryptography.X509Certificates.X509Certificate2 $ca
+          if ($served.Thumbprint -ne $root.Thumbprint) { throw 'served certificate is not the root' }
+          # Only Caddy faces the network: the app and the database answer on 127.0.0.1 only.
+          if (-not (Test-Port '127.0.0.1' 3000)) { throw 'app not up locally' }
+          foreach ($port in @(3000, 5433)) { if (Test-Port $ip $port) { throw "port $port is reachable on the LAN address" } }
+          if (-not (Test-Port $ip 443)) { throw 'HTTPS not reachable on the LAN address' }
+
+          C:\EMR\backup.bat
+          if ($LASTEXITCODE) { throw 'backup failed' }
+          if (-not (Get-ChildItem C:\EMR\data\backups\*.hfbak)) { throw 'no backup file' }
+          C:\EMR\emr-tool.bat provision-node --out C:\provision.hfprov
+          if ($LASTEXITCODE -or -not (Test-Path C:\provision.hfprov)) { throw 'provision-node failed' }
+
+          C:\EMR\stop.bat
+          Start-Sleep 3
+          foreach ($port in @(443, 3000, 5433)) { if (Test-Port '127.0.0.1' $port) { throw "port $port still open after stop" } }
+
+      - name: Fallback - setup from the hub's file, run standalone, export a bundle
+        shell: pwsh
+        run: |
+          . C:\EMR\scripts\common.ps1
+          $ErrorActionPreference = 'Stop'
+          robocopy dist\EMR C:\EMR-FB /E /NFL /NDL /NJH /NJS /NP | Out-Null
+          if ($LASTEXITCODE -ge 8) { exit 1 }
+          C:\EMR-FB\setup.bat -Role fallback -SyncKeyFile C:\EMR\config\sync-key.txt -ProvisionFile C:\provision.hfprov -FirstNumber 5001 -EmailDomains example.org -NoSchedule -NonInteractive
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          Start-Process cmd.exe -ArgumentList '/c', 'C:\EMR-FB\start-standalone.bat > C:\EMR-FB\data\logs\start.out 2>&1' -WindowStyle Hidden
+          $ca = 'C:\EMR-FB\data\caddy\pki\authorities\local\root.crt'
+          $deadline = (Get-Date).AddMinutes(4)
+          while (-not ((Test-Path $ca) -and (Test-Port '127.0.0.1' 443)) -and (Get-Date) -lt $deadline) { Start-Sleep 2 }
+          Get-Content C:\EMR-FB\data\logs\start.out
+          curl.exe --fail -sS -o NUL --cacert $ca https://localhost/login
+          if ($LASTEXITCODE) { throw 'standalone HTTPS failed' }
+          $ip = Get-LanIp
+          if (Test-Port $ip 443) { throw 'a standalone fallback must not be reachable from the network' }
+          C:\EMR-FB\emr-tool.bat export-bundle --out C:\fallback.hfsync
+          if ($LASTEXITCODE -or -not (Test-Path C:\fallback.hfsync)) { throw 'export-bundle failed' }
+          C:\EMR-FB\stop.bat
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: windows-logs
+          path: |
+            C:/EMR/data/logs
+            C:/EMR-FB/data/logs
           retention-days: 7

@@ -121,6 +121,21 @@
     "haveAccount": "Already registered?",
     "signIn": "Sign in"
   },
+  "Setup": {
+    "title": "Set up this device",
+    "intro": "Do this once on every phone, tablet and laptop, before the clinic opens. It lets the browser trust the EMR's secure connection, so there are no warnings.",
+    "download": "Download the certificate",
+    "fingerprint": "SHA-256 fingerprint:",
+    "validTo": "Valid until {date}.",
+    "notAvailable": "No certificate on this computer. Open this page through the hub's address (https://…) to get it.",
+    "iphoneTitle": "iPhone and iPad",
+    "iphone": "Tap Download, then Allow. Open Settings → Profile Downloaded → Install. Then go to Settings → General → About → Certificate Trust Settings and switch on full trust for “Caddy Local Authority”.",
+    "androidTitle": "Android",
+    "android": "Tap Download. Open Settings → Security → Encryption & credentials → Install a certificate → CA certificate, and pick hf-emr-root.crt. Menu names differ between phones; search Settings for “certificate”.",
+    "computerTitle": "Windows and Mac",
+    "computer": "Windows: open the downloaded file → Install Certificate → Current User → Place all certificates in → Trusted Root Certification Authorities. Mac: open it in Keychain Access, then set it to Always Trust.",
+    "done": "Done: go to sign in"
+  },
   "Pending": {
     "title": "Account not active yet",
     "pending": "Your account is waiting for an admin to approve it. Ask a trip admin to approve you, then sign in again.",
