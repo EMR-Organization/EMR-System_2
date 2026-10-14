@@ -56,7 +56,7 @@ async function Conflict({ params }: Pick<Props, "params">) {
             <div className="grid gap-3">
               {/* Someone already made the hub match: closing it keeps the hub's copy. */}
               {c.fields.length === 0 && <p className="text-sm text-muted-foreground">{t("nowSame")}</p>}
-              <ResolveForm conflictId={c.id} hubVersion={c.hubVersion} node={c.sourceNodeId} fields={c.fields} />
+              <ResolveForm conflictId={c.id} hubVersion={c.hubVersion} node={c.sourceNodeId} fields={c.fields} lockedFields={c.lockedFields} />
             </div>
           )}
         </CardContent>

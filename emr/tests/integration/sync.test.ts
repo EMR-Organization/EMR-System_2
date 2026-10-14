@@ -376,6 +376,52 @@ describe("offline fallback and sync", async () => {
     expect((await verifyChain()).ok).toBe(true);
   });
 
+  it("a conflict can't be used to delete or bring back a patient, except by an admin", async () => {
+    async function queuedDeleted(hubDeleted: boolean) {
+      await signInAs(doctor);
+      const { id } = await hubPatients.registerPatient({ tripId: trip.id, ...demographics, firstName: "Borrado" });
+      if (hubDeleted) await db.patient.update({ where: { id }, data: { deletedAt: new Date() } });
+      const row = await db.patient.findUniqueOrThrow({ where: { id } });
+      const conflict = await db.syncConflict.create({
+        data: {
+          entity: "Patient",
+          entityId: id,
+          hubVersion: row.version,
+          // The laptop has the opposite deletion state, and a new address.
+          incoming: { ...contentOf("Patient", row), deleted: !hubDeleted, address: "Laptop lane 5" },
+          incomingHash: "1".repeat(64),
+          sourceNodeId: FALLBACK_NODE,
+        },
+      });
+      return { id, conflictId: conflict.id, version: row.version };
+    }
+
+    for (const hubDeleted of [false, true]) {
+      const q = await queuedDeleted(hubDeleted);
+      await signInAs(doctor);
+      if (!hubDeleted) expect((await getConflict(q.conflictId)).lockedFields).toEqual(["deleted"]);
+      await expect(resolveConflict({ conflictId: q.conflictId, hubVersion: q.version, choices: { deleted: "incoming", address: "incoming" } })).rejects.toMatchObject({
+        messageKey: "syncAdminField",
+      });
+      const untouched = await db.patient.findUniqueOrThrow({ where: { id: q.id } });
+      expect(untouched.deletedAt !== null).toBe(hubDeleted);
+      expect(untouched.address).toBeNull();
+
+      // Keeping the hub's deletion state is fine for a doctor; the other fields still merge.
+      await expect(resolveConflict({ conflictId: q.conflictId, hubVersion: q.version, choices: { deleted: "hub", address: "incoming" } })).resolves.toEqual({
+        status: "TOOK_INCOMING",
+      });
+      expect((await db.patient.findUniqueOrThrow({ where: { id: q.id } })).deletedAt !== null).toBe(hubDeleted);
+    }
+
+    // An admin may take the laptop's deletion.
+    const q = await queuedDeleted(false);
+    await signInAs(admin);
+    expect((await getConflict(q.conflictId)).lockedFields).toEqual([]);
+    await resolveConflict({ conflictId: q.conflictId, hubVersion: q.version, choices: { deleted: "incoming" } });
+    expect((await db.patient.findUniqueOrThrow({ where: { id: q.id } })).deletedAt).not.toBeNull();
+  });
+
   it("two imports of the same new bundle at once: one adds it, the other finds it there", async () => {
     const file = await onFallback(async (m) => {
       await m.signInAs(doctor);

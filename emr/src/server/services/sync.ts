@@ -4,9 +4,9 @@ import { formatPatientLabel } from "@/lib/shared/patient-label";
 import { SYNC_BUNDLE_MAX_BYTES, syncBundleSchema } from "@/lib/shared/schemas/sync";
 import { audit } from "@/server/audit";
 import { requireUser } from "@/server/auth/session";
-import { db } from "@/server/db";
+import { db, type Tx } from "@/server/db";
 import { env } from "@/server/env";
-import { ConflictError, NotFoundError, ValidationError } from "@/server/errors";
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "@/server/errors";
 import { removePhoto, storePhoto } from "@/server/photo-store";
 import { assertCan, can } from "@/server/rbac";
 import { SealedFileError, unseal } from "@/server/sealed";
@@ -89,6 +89,21 @@ export async function listSyncNodes(): Promise<{ nodeId: string; lastImportAt: D
   return db.syncNode.findMany({ orderBy: { lastImportAt: "desc" }, select: { nodeId: true, lastImportAt: true, imports: true } });
 }
 
+/**
+ * Fields a resolver may only take from the laptop with a further permission:
+ * whether a patient is deleted is an admin decision (patient.delete), whichever
+ * way it goes, so a conflict can't be used to delete or bring back a patient.
+ */
+const GUARDED_FIELDS: Partial<Record<SyncEntity, Record<string, "patient.delete">>> = { Patient: { deleted: "patient.delete" } };
+
+async function lockedFields(actor: Awaited<ReturnType<typeof requireUser>>, entity: SyncEntity, tripId: string, client?: Tx): Promise<string[]> {
+  const locked: string[] = [];
+  for (const [field, permission] of Object.entries(GUARDED_FIELDS[entity] ?? {})) {
+    if (!(await can(actor, permission, { tripId, client }))) locked.push(field);
+  }
+  return locked;
+}
+
 export type ConflictListItem = { id: string; entity: SyncEntity; sourceNodeId: string; createdAt: Date; patient: { id: string; label: string; name: string } | null; fields: string[] };
 
 /**
@@ -122,6 +137,8 @@ export async function getConflict(conflictId: unknown) {
   await assertCan(actor, "patient.read", { tripId: view.tripId });
   return {
     canResolve: await can(actor, "sync.resolve", { tripId: view.tripId }),
+    /** Fields this person can only keep as the hub has them (see GUARDED_FIELDS). */
+    lockedFields: await lockedFields(actor, c.entity as SyncEntity, view.tripId),
     id: c.id,
     entity: c.entity as SyncEntity,
     status: c.status,
@@ -164,6 +181,10 @@ export async function resolveConflict(input: unknown): Promise<{ status: "KEPT_H
 
     const hub = contentOf(entity, row);
     const incoming = c.incoming as Content;
+    for (const field of await lockedFields(actor, entity, row.tripId, tx)) {
+      const differs = JSON.stringify(hub[field]) !== JSON.stringify(incoming[field] ?? null);
+      if (differs && choices[field] === "incoming") throw new ForbiddenError(`${actor.role} can't take ${entity}.${field} from a laptop`, "syncAdminField");
+    }
     const merged: Content = {};
     const taken: string[] = [];
     const kept: string[] = [];
