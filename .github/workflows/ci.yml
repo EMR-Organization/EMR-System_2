@@ -186,14 +186,16 @@ jobs:
           $ip = Get-LanIp
           $name = Get-HubName
           Write-Host "LAN address $ip, name $name"
+          # --ssl-no-revoke: Windows curl (Schannel) insists on a revocation check, and an offline local CA
+          # has no revocation list; browsers treat that as soft-fail.
           foreach ($url in @('https://localhost/login', "https://$ip/login")) {
-            curl.exe --fail -sS -o NUL --cacert $ca $url
+            curl.exe --fail -sS --ssl-no-revoke -o NUL --cacert $ca $url
             if ($LASTEXITCODE) { throw "HTTPS failed: $url" }
           }
-          curl.exe --fail -sS -o NUL --cacert $ca --resolve "${name}:443:127.0.0.1" "https://$name/login"
+          curl.exe --fail -sS --ssl-no-revoke -o NUL --cacert $ca --resolve "${name}:443:127.0.0.1" "https://$name/login"
           if ($LASTEXITCODE) { throw "HTTPS failed for $name" }
           # The certificate devices install is served before sign-in and is Caddy's root.
-          curl.exe --fail -sS -o $env:RUNNER_TEMP\served.crt --cacert $ca https://localhost/setup/certificate
+          curl.exe --fail -sS --ssl-no-revoke -o $env:RUNNER_TEMP\served.crt --cacert $ca https://localhost/setup/certificate
           $served = New-Object Security.Cryptography.X509Certificates.X509Certificate2 "$env:RUNNER_TEMP\served.crt"
           $root = New-Object Security.Cryptography.X509Certificates.X509Certificate2 $ca
           if ($served.Thumbprint -ne $root.Thumbprint) { throw 'served certificate is not the root' }
@@ -229,7 +231,7 @@ jobs:
           $deadline = (Get-Date).AddMinutes(4)
           while (-not ((Test-Path $ca) -and (Test-Port '127.0.0.1' 443)) -and (Get-Date) -lt $deadline) { Start-Sleep 2 }
           Get-Content C:\EMR-FB\data\logs\start.out
-          curl.exe --fail -sS -o NUL --cacert $ca https://localhost/login
+          curl.exe --fail -sS --ssl-no-revoke -o NUL --cacert $ca https://localhost/login
           if ($LASTEXITCODE) { throw 'standalone HTTPS failed' }
           $ip = Get-LanIp
           if (Test-Port $ip 443) { throw 'a standalone fallback must not be reachable from the network' }
