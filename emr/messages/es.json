@@ -676,6 +676,14 @@
       "status": "Estado",
       "discontinueReason": "Motivo de suspensión"
     },
+    "ageUnits": {
+      "YEARS": "Años",
+      "MONTHS": "Meses"
+    },
+    "medicationStatuses": {
+      "ACTIVE": "Activo",
+      "DISCONTINUED": "Suspendido"
+    },
     "back": "← Conflictos",
     "conflictTitle": "Conflicto: {entity}",
     "conflictIntro": "Modificado en el hub y en {node} (detectado {time}). Se conserva la copia del hub a menos que elija la de la laptop.",

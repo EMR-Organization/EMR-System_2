@@ -676,6 +676,14 @@
       "status": "Status",
       "discontinueReason": "Reason stopped"
     },
+    "ageUnits": {
+      "YEARS": "Years",
+      "MONTHS": "Months"
+    },
+    "medicationStatuses": {
+      "ACTIVE": "Active",
+      "DISCONTINUED": "Discontinued"
+    },
     "back": "← Conflicts",
     "conflictTitle": "Conflict: {entity}",
     "conflictIntro": "Edited on the hub and on {node} (found {time}). The hub’s copy is kept unless you choose the laptop’s.",

@@ -23,7 +23,10 @@ async function signedIn(browser: Browser, email: string): Promise<Page> {
  * laptop both changed the address (the import itself is covered by the
  * integration tests, which run two real databases).
  */
-async function queueAddressConflict(newAddress: string): Promise<{ patientId: string; conflictId: string }> {
+async function queueAddressConflict(
+  newAddress: string,
+  laptop: { gender?: string; changeWaterSource?: boolean } = {},
+): Promise<{ patientId: string; conflictId: string }> {
   const client = new pg.Client({ connectionString: process.env.DATABASE_OWNER_URL });
   await client.connect();
   try {
@@ -38,11 +41,12 @@ async function queueAddressConflict(newAddress: string): Promise<{ patientId: st
       dateOfBirth: day(p.dateOfBirth),
       ageValue: p.ageValue,
       ageUnit: p.ageUnit,
-      gender: p.gender,
+      gender: laptop.gender ?? p.gender,
       phone: p.phone,
       address: newAddress,
       emergencyContact: p.emergencyContact,
-      waterSource: p.waterSource,
+      // Well Water on one side or the other.
+      waterSource: laptop.changeWaterSource ? (p.waterSource === "Well Water" ? "River/Stream" : "Well Water") : p.waterSource,
       waterRiskRating: p.waterRiskRating,
       waterHistory: p.waterHistory,
       waterNotes: p.waterNotes,
@@ -114,6 +118,26 @@ test("doctors resolve conflicts but can't import bundles", async ({ browser }) =
   await expect(doctor.getByRole("button", { name: "Check bundle" })).toHaveCount(0);
   const response = await doctor.request.post("/api/sync/import", { multipart: { file: { name: "x.hfsync", mimeType: "application/octet-stream", buffer: Buffer.from("x") } } });
   expect([403, 404]).toContain(response.status());
+});
+
+test("a Spanish-speaking doctor sees both sides of a conflict in Spanish", async ({ browser }) => {
+  const address = `Camino ${randomBytes(3).toString("hex")}`;
+  const { conflictId } = await queueAddressConflict(address, { gender: "OTHER", changeWaterSource: true });
+
+  const doctor = await (await newDevice(browser, { locale: "es-GT" })).newPage();
+  await doctor.goto("/login");
+  await doctor.getByLabel("Correo electrónico").fill("physician@example.org");
+  await doctor.getByLabel("Contraseña").fill(PASSWORD);
+  await doctor.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(doctor).toHaveURL(/\/trips$/);
+  await doctor.goto(`/conflicts/${conflictId}`);
+  await expectNoHorizontalScroll(doctor);
+  // Stored codes and list values (OTHER, Well Water) shown in the reader's language.
+  await expect(doctor.getByRole("radio", { name: /Otro/ })).toBeVisible();
+  await expect(doctor.getByRole("radio", { name: /Agua de pozo/ })).toBeVisible();
+  await expect(doctor.getByText("OTHER", { exact: true })).toHaveCount(0);
+  await doctor.getByRole("button", { name: "Guardar opciones" }).click();
+  await expect(doctor.getByText("Conflicto resuelto.")).toBeVisible();
 });
 
 test("students don't see conflicts", async ({ browser }) => {

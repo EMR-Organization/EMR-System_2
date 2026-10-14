@@ -71,6 +71,10 @@ describe("option labels", () => {
     }
   });
 
+  it("are usable as message keys (next-intl splits keys on '.')", () => {
+    for (const values of Object.values(GROUPS)) for (const value of values) expect(value).not.toMatch(/[.{}]/);
+  });
+
   it("translate list values and leave hand-typed ones as typed", () => {
     expect(optionLabel(translator(es), "conditions", "Hypertension")).toBe("Hipertensión");
     expect(optionLabel(translator(es), "frequencies", "Three times daily")).toBe("Tres veces al día");
