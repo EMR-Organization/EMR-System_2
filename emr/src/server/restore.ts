@@ -86,8 +86,11 @@ export async function restoreBackup(options: {
       chain = await verifyChain({ client: restored, ...(manifest.checkpoint ? { checkpoint: manifest.checkpoint } : {}) });
       patients = await restored.patient.count();
       if (!chain.ok) throw new Error(`The restored audit log doesn't verify (entry ${chain.brokenAtId}, ${chain.reason}); not using it`);
-      if (patients !== manifest.counts.patients) {
-        throw new Error(`The restored database has ${patients} patients but the backup says ${manifest.counts.patients}; not using it`);
+      // The count is taken just before pg_dump's snapshot, so patients registered in
+      // between make the dump larger, never smaller. Patients are never hard-deleted,
+      // so fewer means data is missing.
+      if (patients < manifest.counts.patients) {
+        throw new Error(`The restored database has ${patients} patients but the backup had at least ${manifest.counts.patients}; not using it`);
       }
       await restored.$transaction((tx) =>
         audit(tx, null, {

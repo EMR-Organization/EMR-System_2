@@ -119,6 +119,9 @@ describe("backups", () => {
       try {
         const { rows } = await app.query('SELECT count(*)::int AS n FROM "Patient"');
         expect(rows[0].n).toBe(backup.counts.patients);
+        // Users come back; their sign-in sessions (tokens) were never in the backup.
+        expect((await app.query('SELECT count(*)::int AS n FROM "User"')).rows[0].n).toBeGreaterThan(0);
+        expect((await app.query('SELECT count(*)::int AS n FROM "Session"')).rows[0].n).toBe(0);
         await expect(app.query('DELETE FROM "AuditLog"')).rejects.toThrow(/permission denied/);
       } finally {
         await app.end();
@@ -154,6 +157,28 @@ describe("backups", () => {
       if (rows.length > 0) await admin.query(`DROP DATABASE "${database}"`); // clean up even when the check below fails
       expect(rows).toEqual([]);
     } finally {
+      await admin.end();
+    }
+  });
+
+  it("restore accepts a backup taken while a patient was being registered", async () => {
+    // Simulates a registration landing between the manifest's count and pg_dump's snapshot.
+    const real = db.patient.count.bind(db.patient);
+    const spy = vi.spyOn(db.patient, "count").mockImplementationOnce((async () => (await real()) - 1) as never);
+    const backup = await createBackup(null);
+    spy.mockRestore();
+    const database = `emr_busyrestore_${Date.now()}`;
+    try {
+      await expect(
+        restoreBackup({ file: path.join(process.env.BACKUP_DIR!, `${backup.name}.hfbak`), ownerUrl: process.env.DATABASE_OWNER_URL!, database }),
+      ).resolves.toMatchObject({ chain: { ok: true } });
+    } finally {
+      const { default: pg } = await import("pg");
+      const u = new URL(process.env.DATABASE_OWNER_URL!);
+      u.pathname = "/postgres";
+      const admin = new pg.Client({ connectionString: u.toString() });
+      await admin.connect();
+      await admin.query(`DROP DATABASE IF EXISTS "${database}"`);
       await admin.end();
     }
   });

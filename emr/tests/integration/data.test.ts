@@ -175,4 +175,32 @@ describe("trip data export and import", async () => {
     expect(summary.patientsAdded).toBe(0);
     expect(summary.skipped).toHaveLength(data.patients.length);
   });
+
+  it("a file with a duplicated patient is rejected as invalid, not an internal error", async () => {
+    const trip = await createTrip();
+    const admin = await createUser({ role: "ADMIN", specialty: null });
+    await signInAs(admin);
+    await patients.registerPatient({ tripId: trip.id, firstName: "A", lastName: "B", gender: "MALE", assignedSpecialty: "PHYSICIAN", ageValue: 5, ageUnit: "YEARS" });
+    const data = JSON.parse((await exportTrip({ tripId: trip.id, format: "json" })).body) as TripData;
+    const copy = { ...data.patients[0], id: randomUUID(), displayNumber: 50 };
+    data.patients.push(copy, { ...copy, displayNumber: 51 });
+    await expect(importTripFile({ tripId: trip.id, dryRun: "true" }, new Blob([JSON.stringify(data)]))).rejects.toMatchObject({
+      fieldErrors: { file: ["importInvalid"] },
+    });
+  });
+
+  it("CSV registration dates are the clinic's day", async () => {
+    const trip = await createTrip();
+    await signInAs(await createUser({ role: "ADMIN", specialty: null }));
+    const p = await patients.registerPatient({ tripId: trip.id, firstName: "Eve", lastName: "Ning", gender: "FEMALE", assignedSpecialty: "PHYSICIAN", ageValue: 5, ageUnit: "YEARS" });
+    await db.patient.update({ where: { id: p.id }, data: { createdAt: new Date("2026-10-13T01:30:00Z") } }); // 7:30 pm on the 12th in Guatemala
+    const tz = process.env.TZ;
+    process.env.TZ = "America/Guatemala";
+    try {
+      const csv = (await exportTrip({ tripId: trip.id, format: "csv" })).body;
+      expect(csv).toContain(",2026-10-12\r\n");
+    } finally {
+      process.env.TZ = tz;
+    }
+  });
 });

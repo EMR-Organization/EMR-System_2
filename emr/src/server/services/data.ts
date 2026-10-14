@@ -1,6 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { csvCell } from "@/lib/shared/csv";
+import { localDay } from "@/lib/shared/dates";
 import { formatPatientLabel } from "@/lib/shared/patient-label";
 import { IMPORT_MAX_BYTES, tripDataSchema } from "@/lib/shared/schemas/trip-data";
 import { audit } from "@/server/audit";
@@ -141,7 +142,7 @@ function toCsv(data: Awaited<ReturnType<typeof buildTripData>>): string {
         .filter((m) => m.status === "ACTIVE")
         .map((m) => [m.name, m.dosage, m.frequency].filter(Boolean).join(" "))
         .join("; "),
-      p.createdAt.slice(0, 10),
+      localDay(new Date(p.createdAt)),
     ];
   });
   // A byte-order mark so Excel reads accents (José) correctly.

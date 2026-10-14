@@ -128,7 +128,7 @@ async function Log({ searchParams }: Props) {
               return (
                 <li key={r.id} className="grid gap-1 px-4 py-3">
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant={r.action.includes("fail") || r.action.includes("denied") ? "destructive" : "secondary"} className="font-mono">
+                    <Badge variant={/fail|blocked|denied/.test(r.action) ? "destructive" : "secondary"} className="font-mono">
                       {r.action}
                     </Badge>
                     <span className="text-muted-foreground tabular-nums">

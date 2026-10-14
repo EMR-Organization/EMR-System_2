@@ -34,6 +34,7 @@ const CHECK_BYTES = 16;
 const HEADER_BYTES = MAGIC.length + SALT_BYTES + IV_BYTES + CHECK_BYTES;
 export const BACKUP_FORMAT_VERSION = 1;
 export const KEEP_DAYS = 14;
+const MAX_CHUNK_BYTES = 64 * 1024 * 1024;
 const NAME = /^emr-\d{8}-\d{6}-[0-9a-f]{6}$/;
 
 export type BackupManifest = {
@@ -42,6 +43,7 @@ export type BackupManifest = {
   createdAt: string;
   nodeId: string;
   checkpoint: Checkpoint | null;
+  /** Taken just before the dump: the dump has at least these many (more if work happened meanwhile). */
   counts: { patients: number; photos: number; auditEntries: number };
 };
 
@@ -163,6 +165,9 @@ async function unframe(source: AsyncIterable<Buffer>, outDir: string): Promise<s
       for (;;) {
         const n = (await reader.read(4)).readUInt32BE();
         if (n === 0) break;
+        // Real chunks are pg_dump output or one photo. A damaged file (decrypted
+        // before its tag is checked at the end) mustn't make us buffer gigabytes.
+        if (n > MAX_CHUNK_BYTES) throw new Error("Backup archive chunk is invalid");
         await file.write(await reader.read(n));
       }
     } finally {
@@ -175,7 +180,9 @@ async function unframe(source: AsyncIterable<Buffer>, outDir: string): Promise<s
 // ---------- create ----------
 
 async function* pgDumpOutput(): AsyncGenerator<Buffer> {
-  const child = spawn(pgTool("pg_dump"), ["--format=custom", "--no-password"], {
+  // Sign-in sessions aren't backed up (the table is, empty): no live tokens in
+  // backup files, and after a restore everyone simply signs in again.
+  const child = spawn(pgTool("pg_dump"), ["--format=custom", "--no-password", '--exclude-table-data="Session"'], {
     env: { ...process.env, ...pgEnv(env().DATABASE_URL) },
     stdio: ["ignore", "pipe", "pipe"],
     windowsHide: true,

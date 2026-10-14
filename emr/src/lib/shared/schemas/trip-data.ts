@@ -139,6 +139,19 @@ export const tripDataSchema = z.object({
     location: z.string().max(200),
   }),
   patients: z.array(tripDataPatientSchema).max(20_000),
+}).superRefine((data, ctx) => {
+  // Every ID appears once: a hand-merged file with duplicates is refused up front
+  // (otherwise the database's unique keys would stop the import halfway).
+  const seen = new Set<string>();
+  for (const p of data.patients) {
+    for (const id of [p.id, ...p.conditions.map((r) => r.id), ...p.vitals.map((r) => r.id), ...p.diabetic.map((r) => r.id), ...p.visits.map((r) => r.id), ...p.medications.map((r) => r.id)]) {
+      if (seen.has(id)) {
+        ctx.addIssue({ code: "custom", path: ["patients"], message: "duplicateId" });
+        return;
+      }
+      seen.add(id);
+    }
+  }
 });
 
 export type TripData = z.infer<typeof tripDataSchema>;

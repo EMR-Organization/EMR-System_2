@@ -20,7 +20,7 @@ const listAuditSchema = z.object({
   /** A patient's ID or label (012_05_2026). */
   patient: z.string().trim().max(100).optional().transform((v) => v || undefined),
   /** "patient.view", or a prefix such as "patient." */
-  action: z.string().trim().max(60).regex(/^[a-z.]*$/, { error: "invalid" }).optional().transform((v) => v || undefined),
+  action: z.string().trim().max(60).regex(/^[A-Za-z.]*$/, { error: "invalid" }).optional().transform((v) => v || undefined),
   from: day,
   to: day,
   /** Show entries older than this id (the next page). */
@@ -53,7 +53,9 @@ export async function listAudit(input: unknown): Promise<{ rows: AuditRow[]; nex
 
   const where: Prisma.AuditLogWhereInput = {
     ...(filter.userId ? { userId: filter.userId } : {}),
-    ...(filter.action ? { action: filter.action.endsWith(".") ? { startsWith: filter.action } : filter.action } : {}),
+    ...(filter.action
+      ? { action: filter.action.endsWith(".") ? { startsWith: filter.action, mode: "insensitive" } : { equals: filter.action, mode: "insensitive" } }
+      : {}),
     ...(patientId ? { OR: [{ entityId: patientId }, { details: { path: ["patientId"], equals: patientId } }] } : {}),
     ...(filter.before ? { id: { lt: BigInt(filter.before) } } : {}),
     ts: {

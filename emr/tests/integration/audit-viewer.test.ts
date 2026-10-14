@@ -84,4 +84,10 @@ describe("audit viewer", async () => {
     const entry = await db.auditLog.findFirstOrThrow({ where: { action: "audit.verify" }, orderBy: { id: "desc" } });
     expect(entry.details).toMatchObject({ ok: false, reason: "checkpoint" });
   });
+
+  it("the audit log can be filtered by camelCase actions", async () => {
+    await signInAs(await createUser({ role: "ADMIN", specialty: null }));
+    await expect(listAudit({ action: "trip.setActive" })).resolves.toBeTruthy();
+    await expect(listAudit({ action: "user.resetCode." })).resolves.toBeTruthy();
+  });
 });
