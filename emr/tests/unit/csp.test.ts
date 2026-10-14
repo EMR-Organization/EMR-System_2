@@ -11,6 +11,12 @@ describe("Content-Security-Policy", () => {
     const d = directives(contentSecurityPolicy("abc123"));
     expect(d["script-src"]).toEqual(["'self'", "'nonce-abc123'", "'strict-dynamic'"]);
     expect(directives(contentSecurityPolicy("x", true))["script-src"]).toContain("'unsafe-eval'");
+    // Dev-only relaxations never reach production.
+    expect(directives(contentSecurityPolicy("x", true))["style-src"]).toEqual(["'self'", "'unsafe-inline'"]);
+    const prod = directives(contentSecurityPolicy("x"));
+    expect(prod["style-src"]).not.toContain("'unsafe-inline'");
+    expect(prod["script-src"]).not.toContain("'unsafe-inline'");
+    expect(contentSecurityPolicy("x")).not.toContain("unsafe-eval");
   });
 
   it("locks down everything else to this hub", () => {
