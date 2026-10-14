@@ -17,6 +17,8 @@ param(
     [string]$AdminFile = '',
     [switch]$NoRename,
     [switch]$NoSchedule,
+    # Replace this laptop's HTTPS certificate authority (every device then installs the new one).
+    [switch]$NewCertificates,
     [switch]$NonInteractive
 )
 
@@ -47,8 +49,7 @@ foreach ($f in @($P.Node, $P.Caddy, (Join-Path $P.PgBin 'initdb.exe'), (Join-Pat
 if ($Root -match '[^\x20-\x7E]') { Stop-WithError "Put the EMR folder at a path with plain letters only (e.g. C:\EMR), not $Root." }
 $isAdmin = Test-Admin
 if (-not $isAdmin) { Write-Note 'Not running as administrator: the firewall rule and PC rename will be skipped, with instructions.' }
-& (Join-Path $P.PgBin 'postgres.exe') --version *> $null
-if ($LASTEXITCODE -ne 0) { Stop-WithError 'PostgreSQL cannot run here. Install the Microsoft Visual C++ Redistributable (x64), then run setup again.' }
+if ((Invoke-Quiet (Join-Path $P.PgBin 'postgres.exe') @('--version')) -ne 0) { Stop-WithError 'PostgreSQL cannot run here. Install the Microsoft Visual C++ Redistributable (x64), then run setup again.' }
 
 # ---------------------------------------------------------------- settings
 $existing = Read-EmrEnv
@@ -72,9 +73,13 @@ if ($firstRun) {
         $NodeId = Ask 'Name for this laptop in the records (letters, digits, - and _)' $default
     }
     if ($NodeId -notmatch '^[A-Za-z0-9_-]{1,32}$') { Stop-WithError "'$NodeId' is not a valid laptop name (letters, digits, - and _, up to 32)." }
-    while (-not $EmailDomains) {
-        $EmailDomains = Ask 'Email domain(s) doctors register with, comma-separated (e.g. hfso.org)'
-        if ($NonInteractive -and -not $EmailDomains) { Stop-WithError 'Give -EmailDomains.' }
+    while ($true) {
+        if (-not $EmailDomains) { $EmailDomains = Ask 'Email domain(s) doctors register with, comma-separated (e.g. hfso.org)' }
+        $EmailDomains = ($EmailDomains -replace '\s', '').ToLower()
+        if ($EmailDomains -match '^[a-z0-9-]+(\.[a-z0-9-]+)+(,[a-z0-9-]+(\.[a-z0-9-]+)+)*$') { break }
+        if ($NonInteractive) { Stop-WithError "Give -EmailDomains as domains like hfso.org (got '$EmailDomains')." }
+        Write-Warn 'That is not a list of domains like hfso.org or hfso.org,example.org.'
+        $EmailDomains = ''
     }
 
     $syncKey = ''
@@ -106,7 +111,7 @@ if ($firstRun) {
         PHOTOS_DIR            = $P.Photos
         BACKUP_DIR            = $P.Backups
         PG_BIN_DIR            = $P.PgBin
-        CADDY_ROOT_CERT       = (Join-Path $P.CaddyData 'pki\authorities\local\root.crt')
+        CADDY_ROOT_CERT       = (Join-Path $P.Ca 'root.crt')
     }
     Protect-Folder $P.Config
     Write-EmrEnv $values
@@ -136,6 +141,17 @@ Import-EmrEnv | Out-Null
 # ---------------------------------------------------------------- database
 Protect-Folder $P.Data
 New-Item -ItemType Directory -Force -Path $P.Photos, $P.Backups, $P.Logs, $P.Run, $P.CaddyData | Out-Null
+
+# HTTPS certificate authority: the root's private key is never stored (see scripts/make-ca.ts).
+if ($NewCertificates -or -not (Test-Path (Join-Path $P.Ca 'intermediate.key'))) {
+    Write-Step 'Creating the HTTPS certificates'
+    if ($NewCertificates) {
+        Remove-Item -Recurse -Force -LiteralPath $P.CaddyData -ErrorAction SilentlyContinue
+        New-Item -ItemType Directory -Force -Path $P.CaddyData | Out-Null
+        Write-Warn 'New certificates: every phone and laptop must install the new one from /setup (and may remove the old one).'
+    }
+    Invoke-Tool 'make-ca' @($P.Ca, $existing['NODE_ID'])
+}
 if (-not (Test-Path (Join-Path $P.PgData 'PG_VERSION'))) {
     Write-Step 'Creating the database (only reachable from this laptop)'
     $owner = [Uri]$existing['DATABASE_OWNER_URL']
@@ -252,7 +268,8 @@ if (-not $NoSchedule) {
 Write-Step 'Disk encryption'
 $bitlocker = $null
 try { $bitlocker = (New-Object -ComObject Shell.Application).NameSpace($env:SystemDrive + '\').Self.ExtendedProperty('System.Volume.BitLockerProtection') } catch { }
-if ($bitlocker -eq 1 -or $bitlocker -eq 3 -or $bitlocker -eq 5) {
+# 1 = on, 3 = encrypting, 6 = on and locked. 5 (suspended) leaves the key in the clear, so it counts as off.
+if ($bitlocker -eq 1 -or $bitlocker -eq 3 -or $bitlocker -eq 6) {
     Write-Note 'BitLocker is on.'
 } else {
     Write-Warn 'BitLocker does not appear to be on. Patient data must be on an encrypted drive: turn on BitLocker (Settings > Privacy & security > Device encryption) before the trip.'

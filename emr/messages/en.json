@@ -129,7 +129,7 @@
     "validTo": "Valid until {date}.",
     "notAvailable": "No certificate on this computer. Open this page through the hub's address (https://…) to get it.",
     "iphoneTitle": "iPhone and iPad",
-    "iphone": "Tap Download, then Allow. Open Settings → Profile Downloaded → Install. Then go to Settings → General → About → Certificate Trust Settings and switch on full trust for “Caddy Local Authority”.",
+    "iphone": "Tap Download, then Allow. Open Settings → Profile Downloaded → Install. Then go to Settings → General → About → Certificate Trust Settings and switch on full trust for “HF EMR Local Authority”.",
     "androidTitle": "Android",
     "android": "Tap Download. Open Settings → Security → Encryption & credentials → Install a certificate → CA certificate, and pick hf-emr-root.crt. Menu names differ between phones; search Settings for “certificate”.",
     "computerTitle": "Windows and Mac",

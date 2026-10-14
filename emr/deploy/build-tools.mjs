@@ -22,6 +22,7 @@ export const TOOLS = [
   "export-bundle",
   "import-legacy",
   "hub-banner",
+  "make-ca",
 ];
 
 export async function buildTools(outDir) {

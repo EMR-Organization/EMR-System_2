@@ -13,8 +13,11 @@ if (-not (Test-PgRunning)) {
     exit 0
 }
 $script = Join-Path $P.Tools 'backup.mjs'
+# 'Continue': Windows PowerShell 5.1 would otherwise stop at the first line node writes to stderr.
+$ErrorActionPreference = 'Continue'
 $output = & $P.Node $script 2>&1
 $code = $LASTEXITCODE
+$ErrorActionPreference = 'Stop'
 $output | ForEach-Object { "$_" } | Add-Content -LiteralPath $log -Encoding ASCII
 if (-not $Scheduled) { $output | ForEach-Object { Write-Host "$_" } }
 if ($code -ne 0) { Stop-WithError "Backup failed. See $log." }

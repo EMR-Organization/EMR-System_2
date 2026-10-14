@@ -34,6 +34,16 @@ UPDATING
   Stop the EMR, replace everything EXCEPT config\ and data\, start it again.
   Database updates are applied automatically on start.
 
+HTTPS CERTIFICATES
+  setup makes this laptop's own certificate authority. Devices install its
+  certificate from https://<address>/setup. It can only vouch for local names
+  (*.local, localhost) and private addresses, never for internet sites, so a
+  lost laptop can't be used to fake a bank or email site to those devices.
+  It lasts 3 years; start-hub warns 60 days ahead. Then run
+  setup.bat -NewCertificates and install the new one on every device (open
+  /setup by the IP address if emr-hub.local refuses to load).
+  After the trip, devices may remove it (Settings > certificates/profiles).
+
 PROBLEMS
   Logs are in data\logs (app.log, caddy.log, postgres.log, backup.log).
   "Port 443 in use": another program (Skype, IIS, VPN software) is using it.

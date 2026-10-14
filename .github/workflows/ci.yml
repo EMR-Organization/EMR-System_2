@@ -169,6 +169,7 @@ jobs:
           if (-not (Get-NetFirewallRule -DisplayName 'HF EMR (HTTPS from local network)' -ErrorAction SilentlyContinue)) { throw 'no firewall rule' }
           if (-not (Get-ScheduledTask -TaskName 'HF EMR nightly backup' -ErrorAction SilentlyContinue)) { throw 'no backup task' }
           if (-not (Select-String -Path C:\EMR\config\emr.env -Pattern '^SYNC_KEY="[A-Za-z0-9_-]{40,}"$' -Quiet)) { throw 'no generated SYNC_KEY' }
+          if (-not (Test-Path C:\EMR\data\caddy\ca\intermediate.key)) { throw 'no HTTPS certificate authority' }
 
       - name: Hub - start and check what the network can reach
         shell: pwsh
@@ -176,7 +177,7 @@ jobs:
           . C:\EMR\scripts\common.ps1
           $ErrorActionPreference = 'Stop'
           Start-Process cmd.exe -ArgumentList '/c', 'C:\EMR\start-hub.bat > C:\EMR\data\logs\start-hub.out 2>&1' -WindowStyle Hidden
-          $ca = 'C:\EMR\data\caddy\pki\authorities\local\root.crt'
+          $ca = 'C:\EMR\data\caddy\ca\root.crt'
           $deadline = (Get-Date).AddMinutes(4)
           while (-not ((Test-Path $ca) -and (Test-Port '127.0.0.1' 443)) -and (Get-Date) -lt $deadline) { Start-Sleep 2 }
           Get-Content C:\EMR\data\logs\start-hub.out
@@ -198,6 +199,8 @@ jobs:
           if (-not (Test-Port '127.0.0.1' 3000)) { throw 'app not up locally' }
           foreach ($port in @(3000, 5433)) { if (Test-Port $ip $port) { throw "port $port is reachable on the LAN address" } }
           if (-not (Test-Port $ip 443)) { throw 'HTTPS not reachable on the LAN address' }
+          # Caddy signs with the name-constrained intermediate; no root key exists on the laptop.
+          if (Get-ChildItem -Recurse C:\EMR -Filter root.key -ErrorAction SilentlyContinue) { throw 'a root private key is on disk' }
 
           C:\EMR\backup.bat
           if ($LASTEXITCODE) { throw 'backup failed' }
@@ -219,7 +222,7 @@ jobs:
           C:\EMR-FB\setup.bat -Role fallback -SyncKeyFile C:\EMR\config\sync-key.txt -ProvisionFile C:\provision.hfprov -FirstNumber 5001 -EmailDomains example.org -NoSchedule -NonInteractive
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           Start-Process cmd.exe -ArgumentList '/c', 'C:\EMR-FB\start-standalone.bat > C:\EMR-FB\data\logs\start.out 2>&1' -WindowStyle Hidden
-          $ca = 'C:\EMR-FB\data\caddy\pki\authorities\local\root.crt'
+          $ca = 'C:\EMR-FB\data\caddy\ca\root.crt'
           $deadline = (Get-Date).AddMinutes(4)
           while (-not ((Test-Path $ca) -and (Test-Port '127.0.0.1' 443)) -and (Get-Date) -lt $deadline) { Start-Sleep 2 }
           Get-Content C:\EMR-FB\data\logs\start.out

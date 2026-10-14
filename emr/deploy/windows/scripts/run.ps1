@@ -10,6 +10,12 @@ $Host.UI.RawUI.WindowTitle = "HF EMR ($Mode) - keep this window open"
 
 $settings = Import-EmrEnv
 if (-not (Test-Path (Join-Path $P.PgData 'PG_VERSION'))) { Stop-WithError 'No database here yet. Run setup.bat first.' }
+$intermediate = Join-Path $P.Ca 'intermediate.crt'
+if (-not (Test-Path $intermediate)) { Stop-WithError 'No HTTPS certificates here yet. Run setup.bat first.' }
+$caExpires = (New-Object Security.Cryptography.X509Certificates.X509Certificate2 $intermediate).NotAfter
+if ($caExpires -lt (Get-Date).AddDays(60)) {
+    Write-Warn "This laptop's HTTPS certificates expire on $($caExpires.ToString('yyyy-MM-dd')). Before then: setup.bat -NewCertificates, then install the new certificate on every device (/setup)."
+}
 if ((Test-Background 'app') -or (Test-Background 'caddy')) {
     Stop-WithError 'The EMR is already running (another start window?). Run stop.bat first if it is stuck.'
 }
@@ -25,7 +31,8 @@ $env:HOSTNAME = '127.0.0.1'   # the app is reachable from this laptop only; Cadd
 
 function Start-App {
     Write-Step 'Starting the EMR app'
-    Start-Background 'app' $P.Node 'server.js' $P.App | Out-Null
+    # The app connects as emr_app only: it never gets the database owner's password.
+    Start-Background 'app' $P.Node 'server.js' $P.App @('DATABASE_OWNER_URL') | Out-Null
     if (-not (Wait-Http "http://127.0.0.1:$AppPort/login" 120)) {
         Stop-WithError "The app did not start. See $(Join-Path $P.Logs 'app.log')."
     }
@@ -33,7 +40,8 @@ function Start-App {
 
 function Start-Caddy([string]$Ip) {
     Write-Caddyfile $Mode $Ip
-    Start-Background 'caddy' $P.Caddy "run --config `"$($P.Caddyfile)`" --adapter caddyfile" $P.Run | Out-Null
+    # Caddy needs none of the EMR's secrets.
+    Start-Background 'caddy' $P.Caddy "run --config `"$($P.Caddyfile)`" --adapter caddyfile" $P.Run @($settings.Keys) | Out-Null
     $deadline = (Get-Date).AddSeconds(30)
     while ((Get-Date) -lt $deadline -and -not (Test-Port '127.0.0.1' 443)) { Start-Sleep -Milliseconds 500 }
     if (-not (Test-Port '127.0.0.1' 443)) {

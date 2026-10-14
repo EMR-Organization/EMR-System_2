@@ -21,6 +21,7 @@ $P = @{
     Logs       = Join-Path $Root 'data\logs'
     Run        = Join-Path $Root 'data\run'
     CaddyData  = Join-Path $Root 'data\caddy'
+    Ca         = Join-Path $Root 'data\caddy\ca'
     Caddyfile  = Join-Path $Root 'data\run\Caddyfile'
 }
 $PgPort = 5433      # not 5432, so an existing PostgreSQL install doesn't clash
@@ -81,6 +82,20 @@ function Protect-Folder([string]$Path) {
     if ($LASTEXITCODE -ne 0) { Write-Warn "Could not restrict access to $Path (icacls exit $LASTEXITCODE)." }
 }
 
+# Runs a program with its output discarded and returns its exit code. Windows
+# PowerShell 5.1 turns a native program's stderr into errors when redirected,
+# which $ErrorActionPreference = 'Stop' would make fatal; this keeps them harmless.
+function Invoke-Quiet([string]$File, [string[]]$Arguments = @()) {
+    $saved = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & $File @Arguments *> $null
+        return $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $saved
+    }
+}
+
 function Invoke-Tool([string]$Name, [string[]]$ToolArgs = @()) {
     $script = Join-Path $P.Tools "$Name.mjs"
     & $P.Node $script @ToolArgs
@@ -96,8 +111,7 @@ function Invoke-PgCtl([string[]]$PgArgs) {
 
 function Test-PgRunning {
     if (-not (Test-Path (Join-Path $P.PgData 'PG_VERSION'))) { return $false }
-    & (Join-Path $P.PgBin 'pg_ctl.exe') status -D $P.PgData *> $null
-    return ($LASTEXITCODE -eq 0)
+    return ((Invoke-Quiet (Join-Path $P.PgBin 'pg_ctl.exe') @('status', '-D', $P.PgData)) -eq 0)
 }
 
 function Start-Pg {
@@ -117,7 +131,8 @@ function Stop-Pg {
 # ---------------- background programs (app, Caddy) ----------------
 
 # Starts a program with no window, output appended to a log, and remembers its PID.
-function Start-Background([string]$Name, [string]$File, [string]$Arguments, [string]$WorkDir) {
+# $Withhold: environment variables the program must not get (least privilege).
+function Start-Background([string]$Name, [string]$File, [string]$Arguments, [string]$WorkDir, [string[]]$Withhold = @()) {
     New-Item -ItemType Directory -Force -Path $P.Logs, $P.Run | Out-Null
     $log = Join-Path $P.Logs "$Name.log"
     $psi = New-Object Diagnostics.ProcessStartInfo
@@ -126,6 +141,7 @@ function Start-Background([string]$Name, [string]$File, [string]$Arguments, [str
     $psi.WorkingDirectory = $WorkDir
     $psi.UseShellExecute = $false
     $psi.CreateNoWindow = $true
+    foreach ($k in $Withhold) { if ($psi.EnvironmentVariables.ContainsKey($k)) { $psi.EnvironmentVariables.Remove($k) } }
     $proc = [Diagnostics.Process]::Start($psi)
     Set-Content -LiteralPath (Join-Path $P.Run "$Name.pid") -Value $proc.Id -Encoding ASCII
     return $proc
@@ -136,7 +152,7 @@ function Stop-Background([string]$Name) {
     if (-not (Test-Path $pidFile)) { return }
     $id = (Get-Content -LiteralPath $pidFile -ErrorAction SilentlyContinue | Select-Object -First 1)
     if ($id -and (Get-Process -Id $id -ErrorAction SilentlyContinue)) {
-        & taskkill.exe /PID $id /T /F *> $null
+        Invoke-Quiet 'taskkill.exe' @('/PID', "$id", '/T', '/F') | Out-Null
     }
     Remove-Item -LiteralPath $pidFile -Force -ErrorAction SilentlyContinue
 }
@@ -204,6 +220,7 @@ function Write-Caddyfile([string]$Mode, [string]$Ip) {
         if ($Ip) { $sites += "https://$Ip" }
     }
     $storage = $P.CaddyData.Replace('\', '/')
+    $ca = $P.Ca.Replace('\', '/')
     $content = @"
 # Written by start-$Mode each time it starts. Edits here are overwritten.
 {
@@ -214,7 +231,15 @@ function Write-Caddyfile([string]$Mode, [string]$Ip) {
 	storage file_system "$storage"
 	pki {
 		ca local {
-			name "HF EMR Local Authority"
+			# Made by setup (make-ca). Caddy gets the root certificate only, never its key,
+			# and signs with the name-constrained intermediate.
+			root {
+				cert "$ca/root.crt"
+			}
+			intermediate {
+				cert "$ca/intermediate.crt"
+				key "$ca/intermediate.key"
+			}
 		}
 	}
 	log {

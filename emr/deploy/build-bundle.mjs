@@ -40,7 +40,9 @@ function fail(message) {
 }
 
 function run(cmd, cmdArgs, options = {}) {
-  const r = spawnSync(cmd, cmdArgs, { stdio: "inherit", shell: process.platform === "win32", ...options });
+  // npm is a .cmd on Windows and needs a shell; everything else runs directly, so
+  // arguments with spaces ("pgsql/pgAdmin 4/...") stay whole.
+  const r = spawnSync(cmd, cmdArgs, { stdio: "inherit", shell: process.platform === "win32" && cmd === "npm", ...options });
   if (r.status !== 0) fail(`${cmd} ${cmdArgs.join(" ")} failed`);
 }
 
@@ -89,6 +91,13 @@ console.log(`Assembling ${out}`);
 rmSync(out, { recursive: true, force: true });
 const app = path.join(out, "app");
 cpSync(".next/standalone", app, { recursive: true });
+// Next's file tracing follows the app's dynamic file paths (photos, backups, the legacy
+// importer) and copies parts of the project folder into the standalone output: a
+// developer's data/ (backups, photos), sources, tests. The server doesn't need any of it.
+for (const f of ["data", "dist", "src", "tests", "deploy", "scripts", "prisma", "components.json", "tsconfig.json", "README.md", "AGENTS.md", "CLAUDE.md"]) {
+  rmSync(path.join(app, f), { recursive: true, force: true });
+}
+for (const f of readdirSync(app)) if (f.startsWith(".env")) rmSync(path.join(app, f), { force: true });
 cpSync(".next/static", path.join(app, ".next/static"), { recursive: true });
 if (existsSync("public")) cpSync("public", path.join(app, "public"), { recursive: true });
 cpSync("prisma/migrations", path.join(app, "migrations"), { recursive: true });
