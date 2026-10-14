@@ -18,6 +18,7 @@ async function main() {
   try {
     const result = await loadProvisionFile(await readFile(file), { firstNumber });
     console.log(`Loaded ${result.users} accounts, ${result.trips} trips, ${result.members} memberships.`);
+    if (result.disabled) console.log(`Disabled ${result.disabled} account(s) that are no longer active on the hub.`);
     for (const s of result.skipped) console.warn(`! ${s}`);
   } catch (err) {
     if (err instanceof SealedFileError) {

@@ -295,4 +295,41 @@ describe("offline fallback and sync", async () => {
     await expect(resolveConflict({ conflictId: crypto.randomUUID(), hubVersion: 1, choices: {} })).rejects.toBeInstanceOf(ForbiddenError);
     await expect(importSyncFile({ dryRun: "true" }, null)).rejects.toBeInstanceOf(ForbiddenError);
   });
+
+  it("two imports of the same new bundle at once: one adds it, the other finds it there", async () => {
+    const file = await onFallback(async (m) => {
+      await m.signInAs(doctor);
+      await m.patients.registerPatient({ tripId: trip.id, ...demographics, firstName: "Paralela" });
+      return (await m.exporter.buildBundleFile()).file;
+    });
+    await signInAs(admin);
+    const [a, b] = await Promise.all([importSyncFile({ dryRun: "false" }, blob(file)), importSyncFile({ dryRun: "false" }, blob(file))]);
+    expect(a.patientsAdded + b.patientsAdded).toBe(1);
+  }, 60_000);
+
+  it("refreshing the provisioning file mirrors the hub's accounts: disabled ones are signed out, the hub's wins an email clash", async () => {
+    const leaver = await createUser();
+    const newcomer = await createUser();
+    const first = (await buildProvisionFile()).file;
+    await onFallback(async (m) => {
+      await m.provision.loadProvisionFile(first);
+      await m.signInAs(leaver);
+      // A local account (say, made with create-admin on the laptop) with an email the hub is about to use.
+      const { db: fallback } = await import("@/server/db");
+      await fallback.user.delete({ where: { id: newcomer.id } });
+      await fallback.user.create({ data: { email: newcomer.email, name: "Local", role: "ADMIN", status: "ACTIVE" } });
+    });
+
+    await db.user.update({ where: { id: leaver.id }, data: { status: "DISABLED" } });
+    const second = (await buildProvisionFile()).file;
+    await onFallback(async (m) => {
+      const result = await m.provision.loadProvisionFile(second);
+      const { db: fallback } = await import("@/server/db");
+      expect(result.disabled).toBeGreaterThanOrEqual(2); // the leaver and the replaced local account
+      expect(await fallback.session.count({ where: { userId: leaver.id } })).toBe(0);
+      expect(await m.users.signIn({ email: leaver.email, password: leaver.password })).toEqual({ status: "DISABLED" });
+      expect(await m.users.signIn({ email: newcomer.email, password: newcomer.password })).toEqual({ status: "ACTIVE" });
+      expect((await fallback.user.findUniqueOrThrow({ where: { email: newcomer.email } })).id).toBe(newcomer.id);
+    });
+  }, 60_000);
 });

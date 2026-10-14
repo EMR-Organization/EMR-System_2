@@ -42,7 +42,11 @@ const chunks = <T>(items: T[], size = 5000): T[][] => {
   return out;
 };
 
+/** One import at a time: the same bundle imported twice at once would otherwise collide on its new IDs. */
+const SYNC_LOCK_KEY = 72_017_002;
+
 export async function importBundle(tx: Tx, bundle: SyncBundle, subject: AuditSubject, photos: StoredPhotos | "dryRun"): Promise<SyncImportSummary> {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(${SYNC_LOCK_KEY})`;
   const node = bundle.sourceNodeId;
   const summary: SyncImportSummary = {
     sourceNodeId: node,
@@ -93,7 +97,7 @@ export async function importBundle(tx: Tx, bundle: SyncBundle, subject: AuditSub
           continue;
         }
         patientTrip.set(p.id, hub.tripId);
-        await reconcile(tx, subject, "Patient", hub, p, node, summary, () => touch(p.id, hub.tripId));
+        await reconcile(tx, subject, "Patient", hub, p, node, hub.tripId, summary, () => touch(p.id, hub.tripId));
         continue;
       }
       const code = tripCode.get(p.tripId);
@@ -163,7 +167,7 @@ export async function importBundle(tx: Tx, bundle: SyncBundle, subject: AuditSub
     const hub = visitsHere.get(v.id);
     if (hub) {
       if (hub.patientId !== v.patientId) summary.skipped.push(`visit ${v.id}: belongs to another patient here`);
-      else await reconcile(tx, subject, "Visit", hub, v, node, summary, () => touch(v.patientId, patientTrip.get(v.patientId)!, v.id));
+      else await reconcile(tx, subject, "Visit", hub, v, node, patientTrip.get(v.patientId)!, summary, () => touch(v.patientId, patientTrip.get(v.patientId)!, v.id));
       continue;
     }
     const keepTripVisit = v.tripVisit && !withTripVisit.has(v.patientId);
@@ -189,7 +193,7 @@ export async function importBundle(tx: Tx, bundle: SyncBundle, subject: AuditSub
     const hub = medsHere.get(m.id);
     if (hub) {
       if (hub.patientId !== m.patientId) summary.skipped.push(`medication ${m.id}: belongs to another patient here`);
-      else await reconcile(tx, subject, "Medication", hub, m, node, summary, () => touch(m.patientId, patientTrip.get(m.patientId)!, m.id));
+      else await reconcile(tx, subject, "Medication", hub, m, node, patientTrip.get(m.patientId)!, summary, () => touch(m.patientId, patientTrip.get(m.patientId)!, m.id));
       continue;
     }
     // Its visit must be one of the same patient's on the hub.
@@ -313,6 +317,7 @@ async function reconcile(
   hub: HubRow,
   incoming: Record<string, unknown> & { version: number },
   node: string,
+  tripId: string,
   summary: SyncImportSummary,
   onChange: () => void,
 ) {
@@ -364,6 +369,7 @@ async function reconcile(
   }
   if (count === 1) {
     summary.conflicts++;
-    await audit(tx, subject, { action: "sync.conflict", entity, entityId: hub.id, details: { fromNode: node, hubVersion: hub.version } });
+    const details = { fromNode: node, hubVersion: hub.version, ...(entity === "Patient" ? {} : { patientId: String(hub.patientId) }) };
+    await audit(tx, subject, { action: "sync.conflict", entity, entityId: hub.id, tripId, details });
   } else summary.alreadyHere++; // already queued by an earlier import of this bundle
 }
