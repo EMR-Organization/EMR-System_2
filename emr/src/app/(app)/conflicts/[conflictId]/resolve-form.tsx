@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { FormError, useServerForm } from "@/components/form";
 import { Button } from "@/components/ui/button";
-import { resolveConflictAction } from "../../actions";
+import { resolveConflictAction } from "../actions";
 
 type Value = string | number | boolean | string[] | null;
 
@@ -12,14 +12,17 @@ export function ResolveForm({
   hubVersion,
   node,
   fields,
+  lockedFields,
 }: {
   conflictId: string;
   hubVersion: number;
   node: string;
   fields: { field: string; hub: Value; incoming: Value }[];
+  /** Fields only an admin may take from the laptop (the server enforces it too). */
+  lockedFields: string[];
 }) {
   const t = useTranslations("Sync");
-  // On success the action redirects to the Sync page, which says so.
+  // On success the action redirects to the conflict queue, which says so.
   const [state, onSubmit, pending] = useServerForm(resolveConflictAction.bind(null, conflictId, hubVersion, fields.map((f) => f.field)));
 
   const show = (v: Value) => (v === null ? "—" : Array.isArray(v) ? v.join(", ") || "—" : typeof v === "boolean" ? (v ? t("yes") : t("no")) : String(v));
@@ -37,12 +40,13 @@ export function ResolveForm({
             </span>
           </label>
           <label className="flex items-start gap-2 text-sm">
-            <input type="radio" name={`choice:${field}`} value="incoming" className="mt-1" />
+            <input type="radio" name={`choice:${field}`} value="incoming" disabled={lockedFields.includes(field)} className="mt-1" />
             <span className="grid">
               <span className="text-xs text-muted-foreground">{t("takeLaptop", { node })}</span>
               <span className="whitespace-pre-wrap break-words">{show(incoming)}</span>
             </span>
           </label>
+          {lockedFields.includes(field) && <p className="text-xs text-muted-foreground">{t("adminOnlyField")}</p>}
         </fieldset>
       ))}
       <Button type="submit" disabled={pending} className="justify-self-start">

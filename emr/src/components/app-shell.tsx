@@ -44,6 +44,7 @@ async function UserNav() {
   if (roleHas(user.role, "user.manage")) items.push({ href: "/admin/users", label: t("users") });
   if (roleHas(user.role, "audit.read")) items.push({ href: "/admin/audit", label: t("audit") });
   if (roleHas(user.role, "backup.run")) items.push({ href: "/admin/backups", label: t("backups") });
+  if (roleHas(user.role, "sync.resolve")) items.push({ href: "/conflicts", label: t("conflicts") });
   if (roleHas(user.role, "sync.import")) items.push({ href: "/admin/sync", label: t("sync") });
   items.push({ href: "/account", label: t("account") });
 

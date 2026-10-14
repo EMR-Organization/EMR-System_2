@@ -6,7 +6,7 @@ import { orSignIn } from "@/server/page";
 import { getConflict } from "@/server/services/sync";
 import { ResolveForm } from "./resolve-form";
 
-type Props = PageProps<"/admin/sync/conflicts/[conflictId]">;
+type Props = PageProps<"/conflicts/[conflictId]">;
 
 export default function ConflictPage({ params }: Props) {
   return (
@@ -26,7 +26,7 @@ async function Conflict({ params }: Pick<Props, "params">) {
   return (
     <>
       <div className="grid gap-1">
-        <Link href="/admin/sync" className="text-sm underline">
+        <Link href="/conflicts" className="text-sm underline">
           {t("back")}
         </Link>
         <h1 className="text-2xl font-semibold tracking-tight">{t("conflictTitle", { entity: t(`entity.${c.entity}`) })}</h1>
@@ -50,11 +50,13 @@ async function Conflict({ params }: Pick<Props, "params">) {
         <CardContent>
           {c.status !== "OPEN" ? (
             <p className="text-sm text-muted-foreground">{t("alreadyResolved")}</p>
+          ) : !c.canResolve ? (
+            <p className="text-sm text-muted-foreground">{t("pastTripAdminOnly")}</p>
           ) : (
             <div className="grid gap-3">
               {/* Someone already made the hub match: closing it keeps the hub's copy. */}
               {c.fields.length === 0 && <p className="text-sm text-muted-foreground">{t("nowSame")}</p>}
-              <ResolveForm conflictId={c.id} hubVersion={c.hubVersion} node={c.sourceNodeId} fields={c.fields} />
+              <ResolveForm conflictId={c.id} hubVersion={c.hubVersion} node={c.sourceNodeId} fields={c.fields} lockedFields={c.lockedFields} />
             </div>
           )}
         </CardContent>

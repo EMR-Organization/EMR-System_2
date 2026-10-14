@@ -20,7 +20,7 @@ One Windows laptop (the hub) runs the database, the app and an HTTPS server (Cad
 | Other sites making your browser act (CSRF) | `SameSite=Strict` cookies and origin checks on every form and upload. |
 | Big uploads to exhaust the hub's memory | Size limits checked before reading, and uploads refused before reading unless the sender is signed in and allowed to upload there. |
 | Losing records when two people edit at once | Version check on save: the second save is refused, not silently overwritten. Tested with 20 devices saving at once. |
-| A fallback laptop's records clashing with the hub's | Encrypted, authenticated sync bundles; separate number ranges; conflicts queued for an admin to resolve field by field. |
+| A fallback laptop's records clashing with the hub's | Encrypted, authenticated sync bundles; separate number ranges; conflicts queued for a doctor or admin to resolve field by field (past trips: admins only); only admins can import bundles. |
 
 ## Accepted risks (decide consciously)
 

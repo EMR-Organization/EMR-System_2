@@ -50,7 +50,7 @@ The trip → **Data**: doctors and admins can download the trip as CSV (for spre
 1. On the fallback: `start-standalone.bat`. Only that laptop can use it (it isn't reachable over the network, on purpose); one person enters records on it, signed in with a doctor or student account. **Admin accounts don't work on fallbacks** (on purpose: see [security notes](security.md#accepted-risks-decide-consciously)); admin tasks wait for the hub. Patients registered there get numbers from 5001 (or the fallback's own range).
 2. When the hub is back: on the fallback, `emr-tool.bat export-bundle`; copy the `.hfsync` file to a USB stick.
 3. On the hub: Admin → **Sync** → choose the file → **Check bundle**. Read the summary, then **Import**. Importing the same bundle twice adds nothing.
-4. If a record was edited both on the hub and on the fallback, it appears under *Conflicts to resolve*. Open it and pick, field by field, which version to keep. Nothing is applied until you choose.
+4. If a record was edited both on the hub and on the fallback, it appears on the **Conflicts** page (in the menu). Any doctor or admin can open it and pick, field by field, which version to keep; ideally the doctor who saw the patient. Nothing is applied until someone chooses. Conflicts on a past trip can only be resolved by an admin.
 
 Before the trip, and again after approving new accounts, re-provision the fallbacks (see [Before the trip](before-the-trip.md#6-set-up-each-fallback)) so they know everyone's account.
 

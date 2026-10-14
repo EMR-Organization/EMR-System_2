@@ -193,12 +193,18 @@ jobs:
           Write-Host "LAN address $ip, name $name"
           # --ssl-no-revoke: Windows curl (Schannel) insists on a revocation check, and an offline local CA
           # has no revocation list; browsers treat that as soft-fail.
-          foreach ($url in @('https://localhost/login', "https://$ip/login")) {
-            curl.exe --fail -sS --ssl-no-revoke -o NUL --cacert $ca $url
-            if ($LASTEXITCODE) { throw "HTTPS failed: $url" }
+          # Caddy issues each name's certificate just after it starts, so allow ~30 s per name.
+          function Assert-Https([string]$What, [string[]]$CurlArgs) {
+            for ($i = 0; $i -lt 15; $i++) {
+              curl.exe --fail -sS --ssl-no-revoke -o NUL --cacert $ca @CurlArgs
+              if (-not $LASTEXITCODE) { return }
+              Start-Sleep 2
+            }
+            throw "HTTPS failed: $What"
           }
-          curl.exe --fail -sS --ssl-no-revoke -o NUL --cacert $ca --resolve "${name}:443:127.0.0.1" "https://$name/login"
-          if ($LASTEXITCODE) { throw "HTTPS failed for $name" }
+          Assert-Https 'localhost' @('https://localhost/login')
+          Assert-Https $ip @("https://$ip/login")
+          Assert-Https $name @('--resolve', "${name}:443:127.0.0.1", "https://$name/login")
           # The certificate devices install is served before sign-in and is Caddy's root.
           curl.exe --fail -sS --ssl-no-revoke -o $env:RUNNER_TEMP\served.crt --cacert $ca https://localhost/setup/certificate
           $served = New-Object Security.Cryptography.X509Certificates.X509Certificate2 "$env:RUNNER_TEMP\served.crt"

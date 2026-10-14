@@ -4,11 +4,11 @@ import { formatPatientLabel } from "@/lib/shared/patient-label";
 import { SYNC_BUNDLE_MAX_BYTES, syncBundleSchema } from "@/lib/shared/schemas/sync";
 import { audit } from "@/server/audit";
 import { requireUser } from "@/server/auth/session";
-import { db } from "@/server/db";
+import { db, type Tx } from "@/server/db";
 import { env } from "@/server/env";
-import { ConflictError, NotFoundError, ValidationError } from "@/server/errors";
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "@/server/errors";
 import { removePhoto, storePhoto } from "@/server/photo-store";
-import { assertCan } from "@/server/rbac";
+import { assertCan, can } from "@/server/rbac";
 import { SealedFileError, unseal } from "@/server/sealed";
 import { contentHash, contentOf, EDITABLE, toColumns, type Content, type SyncEntity } from "@/server/sync/fields";
 import { importBundle, type StoredPhotos, type SyncImportSummary } from "@/server/sync/import";
@@ -89,16 +89,36 @@ export async function listSyncNodes(): Promise<{ nodeId: string; lastImportAt: D
   return db.syncNode.findMany({ orderBy: { lastImportAt: "desc" }, select: { nodeId: true, lastImportAt: true, imports: true } });
 }
 
+/**
+ * Fields a resolver may only take from the laptop with a further permission:
+ * whether a patient is deleted is an admin decision (patient.delete), whichever
+ * way it goes, so a conflict can't be used to delete or bring back a patient.
+ */
+const GUARDED_FIELDS: Partial<Record<SyncEntity, Record<string, "patient.delete">>> = { Patient: { deleted: "patient.delete" } };
+
+async function lockedFields(actor: Awaited<ReturnType<typeof requireUser>>, entity: SyncEntity, tripId: string, client?: Tx): Promise<string[]> {
+  const locked: string[] = [];
+  for (const [field, permission] of Object.entries(GUARDED_FIELDS[entity] ?? {})) {
+    if (!(await can(actor, permission, { tripId, client }))) locked.push(field);
+  }
+  return locked;
+}
+
 export type ConflictListItem = { id: string; entity: SyncEntity; sourceNodeId: string; createdAt: Date; patient: { id: string; label: string; name: string } | null; fields: string[] };
 
-/** Open conflicts, oldest first, with which fields differ. */
+/**
+ * Open conflicts, oldest first, with which fields differ. Only the ones this
+ * person may resolve: a past trip's conflicts are for admins (past trips are
+ * read-only for everyone else).
+ */
 export async function listConflicts(): Promise<ConflictListItem[]> {
   const actor = await requireUser();
-  await assertCan(actor, "sync.import");
+  await assertCan(actor, "sync.resolve");
   const conflicts = await db.syncConflict.findMany({ where: { status: "OPEN" }, orderBy: { createdAt: "asc" }, take: 500 });
   const out: ConflictListItem[] = [];
   for (const c of conflicts) {
     const view = await conflictView(c.entity as SyncEntity, c.entityId, c.incoming as Content);
+    if (view && !(await can(actor, "sync.resolve", { tripId: view.tripId }))) continue;
     out.push({ id: c.id, entity: c.entity as SyncEntity, sourceNodeId: c.sourceNodeId, createdAt: c.createdAt, patient: view?.patient ?? null, fields: view?.differing ?? [] });
   }
   return out;
@@ -108,12 +128,17 @@ export async function listConflicts(): Promise<ConflictListItem[]> {
 export async function getConflict(conflictId: unknown) {
   const actor = await requireUser();
   const id = parse(z.uuid(), conflictId);
-  await assertCan(actor, "sync.import");
+  await assertCan(actor, "sync.resolve");
   const c = await db.syncConflict.findUnique({ where: { id } });
   if (!c) throw new NotFoundError();
   const view = await conflictView(c.entity as SyncEntity, c.entityId, c.incoming as Content);
   if (!view) throw new NotFoundError();
+  // Doctors can read past trips, so they may look; resolving one is for admins.
+  await assertCan(actor, "patient.read", { tripId: view.tripId });
   return {
+    canResolve: await can(actor, "sync.resolve", { tripId: view.tripId }),
+    /** Fields this person can only keep as the hub has them (see GUARDED_FIELDS). */
+    lockedFields: await lockedFields(actor, c.entity as SyncEntity, view.tripId),
     id: c.id,
     entity: c.entity as SyncEntity,
     status: c.status,
@@ -133,7 +158,7 @@ const resolveSchema = z.object({
 });
 
 /**
- * Applies the admin's pick for each differing field. Fields kept from the hub
+ * Applies a doctor's or admin's pick for each differing field. Fields kept from the hub
  * stay as they are; the record is updated (version + 1) only if something
  * from the laptop was chosen. Either way the laptop's version is remembered,
  * so importing the same bundle again doesn't raise the same conflict.
@@ -141,7 +166,7 @@ const resolveSchema = z.object({
 export async function resolveConflict(input: unknown): Promise<{ status: "KEPT_HUB" | "TOOK_INCOMING" }> {
   const actor = await requireUser();
   const { conflictId, hubVersion, choices } = parse(resolveSchema, input);
-  await assertCan(actor, "sync.import");
+  await assertCan(actor, "sync.resolve");
 
   return db.$transaction(async (tx) => {
     const c = await tx.syncConflict.findUnique({ where: { id: conflictId } });
@@ -150,10 +175,16 @@ export async function resolveConflict(input: unknown): Promise<{ status: "KEPT_H
     const entity = c.entity as SyncEntity;
     const row = await findRow(tx, entity, c.entityId);
     if (!row) throw new NotFoundError();
+    // The record's own trip decides: past trips are admin-only.
+    await assertCan(actor, "sync.resolve", { tripId: row.tripId, client: tx });
     if (row.version !== hubVersion) throw new ConflictError("hub changed", "syncChanged");
 
     const hub = contentOf(entity, row);
     const incoming = c.incoming as Content;
+    for (const field of await lockedFields(actor, entity, row.tripId, tx)) {
+      const differs = JSON.stringify(hub[field]) !== JSON.stringify(incoming[field] ?? null);
+      if (differs && choices[field] === "incoming") throw new ForbiddenError(`${actor.role} can't take ${entity}.${field} from a laptop`, "syncAdminField");
+    }
     const merged: Content = {};
     const taken: string[] = [];
     const kept: string[] = [];
@@ -214,6 +245,7 @@ async function conflictView(entity: SyncEntity, id: string, incoming: Content) {
   const hub = contentOf(entity, row);
   const patient = await db.patient.findUnique({ where: { id: row.patientId }, select: { id: true, displayNumber: true, firstName: true, lastName: true, trip: { select: { code: true } } } });
   return {
+    tripId: row.tripId,
     version: row.version,
     hub,
     hubHash: contentHash(hub),
