@@ -2,7 +2,7 @@
 
 Run this before every trip with the **real** laptops, phones and router you'll take, with no internet (unplug the router's internet cable, or turn off the laptops' other networks). Allow two hours. Three people: one at the hub, two with phones.
 
-Automated tests already cover the app itself on every change (sign-in, roles, patient flow, sync, backups, and the Windows folder on a clean Windows machine). This drill covers what they can't: your hardware, your network, and your people. Tick each box, and write down anything odd, with the time, for whoever maintains the code.
+Automated tests already cover the app itself on every change (sign-in, roles, patient flow, sync, backups, and the Windows folder on a clean Windows machine), and `tests/e2e/drill.spec.ts` rehearses the software half of sections B and F with separate browser devices. This drill covers what they can't: your hardware, your network, and your people. Tick each box, and write down anything odd, with the time, for whoever maintains the code.
 
 Use made-up patients only (for example "Test Drill 1"). Delete them afterwards (Admin can delete a patient by typing its number) or set the drill up on a separate trip that you mark as past.
 
@@ -22,7 +22,7 @@ Use made-up patients only (for example "Test Drill 1"). Delete them afterwards (
 - [ ] Three devices (at least one iPhone and one Android) install the certificate from `/setup`, after checking the fingerprint matches the hub window ([device setup](device-setup.md)). Note which steps differed from the guide on each phone model.
 - [ ] Each device opens the EMR with **no** warning, by the number address, and by `https://emr-hub.local` (note which devices can't use `.local`).
 - [ ] A phone with the certificate **not** installed gets a warning (that's correct).
-- [ ] Ten minutes of normal use on three devices at once: register 5 patients, vitals, a diagnosis, a prescription, a photo from a phone camera. Lists update on the other devices within about 10 seconds.
+- [ ] Ten minutes of normal use on three devices at once: register 5 patients, vitals, a diagnosis, a prescription, a photo from a phone camera. Lists update on the other devices within about 10 seconds (on a device used in the last 2 minutes: an untouched phone stops refreshing so it can sign itself out after 30 minutes; tap it and the list catches up).
 - [ ] Two people open the same patient and both save a change: the second gets "this record changed" and loses nothing silently.
 - [ ] A doctor switches a student off; the student's next click is refused.
 - [ ] Hub screen off for 10 minutes (lid open, AC power): devices still work afterwards.
