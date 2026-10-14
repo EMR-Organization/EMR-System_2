@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { FormError, useServerForm } from "@/components/form";
 import { Button } from "@/components/ui/button";
-import { resolveConflictAction } from "../../actions";
+import { resolveConflictAction } from "../actions";
 
 type Value = string | number | boolean | string[] | null;
 
@@ -19,7 +19,7 @@ export function ResolveForm({
   fields: { field: string; hub: Value; incoming: Value }[];
 }) {
   const t = useTranslations("Sync");
-  // On success the action redirects to the Sync page, which says so.
+  // On success the action redirects to the conflict queue, which says so.
   const [state, onSubmit, pending] = useServerForm(resolveConflictAction.bind(null, conflictId, hubVersion, fields.map((f) => f.field)));
 
   const show = (v: Value) => (v === null ? "—" : Array.isArray(v) ? v.join(", ") || "—" : typeof v === "boolean" ? (v ? t("yes") : t("no")) : String(v));

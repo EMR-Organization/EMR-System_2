@@ -19,6 +19,7 @@ import { searchPatients } from "@/server/services/search";
 import { getConflict, importSyncFile, listConflicts, resolveConflict } from "@/server/services/sync";
 import { signIn } from "@/server/services/users";
 import { buildBundleFile } from "@/server/sync/export";
+import { contentOf } from "@/server/sync/fields";
 import { seal, unseal } from "@/server/sealed";
 import { buildProvisionFile } from "@/server/sync/provision";
 import { browser } from "./fake-request";
@@ -315,12 +316,64 @@ describe("offline fallback and sync", async () => {
     await expect(importSyncFile({ dryRun: "true" }, blob((await buildBundleFile()).file))).rejects.toMatchObject({ fieldErrors: { file: ["syncOwnNode"] } });
   });
 
-  it("is for admins only", async () => {
+  it("importing is for admins; doctors resolve conflicts too, except on past trips; students never", async () => {
+    const student = await createUser({ role: "STUDENT", specialty: null });
+    await db.tripMember.create({ data: { tripId: trip.id, userId: student.id, enabled: true } });
+    const pastTrip = await createTrip();
+
+    /** A patient whose address the hub and a laptop both changed (as an import would queue it). */
+    async function queued(tripId: string) {
+      await signInAs(doctor);
+      const { id } = await hubPatients.registerPatient({ tripId, ...demographics, firstName: "Conflicto" });
+      const row = await db.patient.findUniqueOrThrow({ where: { id } });
+      const conflict = await db.syncConflict.create({
+        data: {
+          entity: "Patient",
+          entityId: id,
+          hubVersion: row.version,
+          incoming: { ...contentOf("Patient", row), address: "Laptop lane 3" },
+          incomingHash: "0".repeat(64),
+          sourceNodeId: FALLBACK_NODE,
+        },
+      });
+      return { patientId: id, conflictId: conflict.id, version: row.version };
+    }
+    const current = await queued(trip.id);
+    const past = await queued(pastTrip.id);
+    await db.trip.update({ where: { id: pastTrip.id }, data: { active: false } });
+
+    // Students: nothing.
+    await signInAs(student);
+    await expect(listConflicts()).rejects.toBeInstanceOf(ForbiddenError);
+    await expect(getConflict(current.conflictId)).rejects.toBeInstanceOf(ForbiddenError);
+    await expect(resolveConflict({ conflictId: current.conflictId, hubVersion: current.version, choices: { address: "incoming" } })).rejects.toBeInstanceOf(ForbiddenError);
+
+    // Doctors: no importing...
     await signInAs(doctor);
     await expect(importSyncFile({ dryRun: "true" }, blob(firstBundle))).rejects.toBeInstanceOf(ForbiddenError);
-    await expect(listConflicts()).rejects.toBeInstanceOf(ForbiddenError);
-    await expect(resolveConflict({ conflictId: crypto.randomUUID(), hubVersion: 1, choices: {} })).rejects.toBeInstanceOf(ForbiddenError);
     await expect(importSyncFile({ dryRun: "true" }, null)).rejects.toBeInstanceOf(ForbiddenError);
+    // ...but they resolve the current trip's conflicts.
+    const mine = (await listConflicts()).map((c) => c.id);
+    expect(mine).toContain(current.conflictId);
+    expect(mine).not.toContain(past.conflictId); // past trips are read-only for them
+    expect((await getConflict(current.conflictId)).canResolve).toBe(true);
+    await expect(resolveConflict({ conflictId: current.conflictId, hubVersion: current.version, choices: { address: "incoming" } })).resolves.toEqual({
+      status: "TOOK_INCOMING",
+    });
+    expect((await db.patient.findUniqueOrThrow({ where: { id: current.patientId } })).address).toBe("Laptop lane 3");
+    expect(await db.auditLog.findFirst({ where: { action: "sync.resolve", entityId: current.patientId } })).toMatchObject({ userId: doctor.id });
+
+    // A past trip's conflict: doctors may look, not resolve.
+    expect((await getConflict(past.conflictId)).canResolve).toBe(false);
+    await expect(resolveConflict({ conflictId: past.conflictId, hubVersion: past.version, choices: { address: "incoming" } })).rejects.toMatchObject({
+      messageKey: "tripClosed",
+    });
+    expect((await db.syncConflict.findUniqueOrThrow({ where: { id: past.conflictId } })).status).toBe("OPEN");
+
+    await signInAs(admin);
+    expect((await listConflicts()).map((c) => c.id)).toContain(past.conflictId);
+    await expect(resolveConflict({ conflictId: past.conflictId, hubVersion: past.version, choices: { address: "hub" } })).resolves.toEqual({ status: "KEPT_HUB" });
+    expect((await verifyChain()).ok).toBe(true);
   });
 
   it("two imports of the same new bundle at once: one adds it, the other finds it there", async () => {

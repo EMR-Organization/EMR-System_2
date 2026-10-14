@@ -74,8 +74,11 @@ test("admins see sync, resolve a conflict field by field, and bad files are refu
   await admin.getByRole("button", { name: "Check bundle" }).click();
   await expect(admin.getByText("That isn't a sync bundle from a fallback laptop.")).toBeVisible();
 
+  // The queue lives on its own page (doctors use it too); the Sync page links to it.
+  await admin.getByRole("link", { name: /Resolve \d+ conflicts?/ }).click();
+  await expect(admin).toHaveURL(/\/conflicts$/);
   // Its own conflict (desktop and phone runs each queue one at the same time).
-  const link = admin.locator(`a[href="/admin/sync/conflicts/${conflictId}"]`);
+  const link = admin.locator(`a[href="/conflicts/${conflictId}"]`);
   await expect(link).toContainText("from fallback-e2e: Address");
   await link.click();
   await expect(admin.getByRole("heading", { name: "Conflict: Patient details" })).toBeVisible();
@@ -83,17 +86,39 @@ test("admins see sync, resolve a conflict field by field, and bad files are refu
   await admin.getByRole("radio", { name: new RegExp(address) }).check();
   await admin.getByRole("button", { name: "Save choices" }).click();
   await expect(admin.getByText("Conflict resolved.")).toBeVisible();
-  await expect(admin).toHaveURL(/\/admin\/sync\?resolved=1$/);
+  await expect(admin).toHaveURL(/\/conflicts\?resolved=1$/);
 
   await admin.goto(`/patients/${patientId}`);
   await expect(admin.getByText(address)).toBeVisible();
 });
 
-test("doctors can't reach sync", async ({ browser }) => {
+test("doctors resolve conflicts but can't import bundles", async ({ browser }) => {
+  const address = `Laptop lane ${randomBytes(3).toString("hex")}`;
+  const { patientId, conflictId } = await queueAddressConflict(address);
+
   const doctor = await signedIn(browser, "physician@example.org");
-  await expect(doctor.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Sync" })).toHaveCount(0);
+  const nav = doctor.getByRole("navigation", { name: "Main" });
+  await expect(nav.getByRole("link", { name: "Sync" })).toHaveCount(0);
+  await nav.getByRole("link", { name: "Conflicts" }).click();
+  await expectNoHorizontalScroll(doctor);
+  await doctor.locator(`a[href="/conflicts/${conflictId}"]`).click();
+  await doctor.getByRole("radio", { name: new RegExp(address) }).check();
+  await doctor.getByRole("button", { name: "Save choices" }).click();
+  await expect(doctor.getByText("Conflict resolved.")).toBeVisible();
+  await doctor.goto(`/patients/${patientId}`);
+  await expect(doctor.getByText(address)).toBeVisible();
+
+  // Importing stays admin-only: no page, no form, and the upload is refused.
   await doctor.goto("/admin/sync");
   await expect(doctor.getByText(/not found/i).first()).toBeVisible();
+  await expect(doctor.getByRole("button", { name: "Check bundle" })).toHaveCount(0);
   const response = await doctor.request.post("/api/sync/import", { multipart: { file: { name: "x.hfsync", mimeType: "application/octet-stream", buffer: Buffer.from("x") } } });
   expect([403, 404]).toContain(response.status());
+});
+
+test("students don't see conflicts", async ({ browser }) => {
+  const student = await signedIn(browser, "student.on@example.com");
+  await expect(student.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Conflicts" })).toHaveCount(0);
+  await student.goto("/conflicts");
+  await expect(student.getByText(/not found/i).first()).toBeVisible();
 });

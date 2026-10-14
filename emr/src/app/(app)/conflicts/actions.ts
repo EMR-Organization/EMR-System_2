@@ -10,6 +10,6 @@ export async function resolveConflictAction(conflictId: string, hubVersion: numb
   const result = await toActionResult(() => resolveConflict({ conflictId, hubVersion, choices }));
   if (!result.ok) return result;
   // Redirect from the server: re-rendering this page as "resolved" would unmount the form first.
-  revalidatePath("/admin/sync");
-  redirect("/admin/sync?resolved=1");
+  revalidatePath("/conflicts");
+  redirect("/conflicts?resolved=1");
 }

@@ -175,7 +175,8 @@
     "search": "Search",
     "audit": "Audit",
     "backups": "Backups",
-    "sync": "Sync"
+    "sync": "Sync",
+    "conflicts": "Conflicts"
   },
   "Specialties": {
     "DENTIST": "Dentist",
@@ -624,6 +625,8 @@
     "queueTitle": "Conflicts to resolve",
     "queueIntro": "The same record was edited on the hub and on a laptop. Pick which version of each field to keep.",
     "queueEmpty": "No conflicts.",
+    "openQueue": "{count, plural, one {Resolve # conflict} other {Resolve # conflicts}}",
+    "pastTripAdminOnly": "This record belongs to a past trip, which is read-only: an admin resolves it.",
     "conflictLine": "from {node}: {fields}",
     "nodesTitle": "Fallback laptops imported from",
     "nodeLine": "{imports, plural, one {# import} other {# imports}}, last {time}",

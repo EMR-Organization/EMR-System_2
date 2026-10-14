@@ -20,6 +20,7 @@ export const PERMISSIONS = [
   "user.manage",
   "data.import",
   "sync.import",
+  "sync.resolve",
   "patient.delete",
   "audit.read",
   "backup.run",
@@ -52,6 +53,9 @@ export const MATRIX: Record<Permission, Record<RoleName, Grant>> = {
   "user.manage": { STUDENT: "none", DOCTOR: "none", ADMIN: "all" },
   "data.import": { STUDENT: "none", DOCTOR: "none", ADMIN: "all" },
   "sync.import": { STUDENT: "none", DOCTOR: "none", ADMIN: "all" },
+  // Choosing between the hub's and a fallback's version of a record. Doctors
+  // too (spec: "a doctor picks"); importing bundles stays admin-only.
+  "sync.resolve": { STUDENT: "none", DOCTOR: "all", ADMIN: "all" },
   "patient.delete": { STUDENT: "none", DOCTOR: "none", ADMIN: "all" },
   "audit.read": { STUDENT: "none", DOCTOR: "none", ADMIN: "all" },
   "backup.run": { STUDENT: "none", DOCTOR: "none", ADMIN: "all" },
@@ -70,6 +74,7 @@ export const TRIP_WRITE_PERMISSIONS: ReadonlySet<Permission> = new Set([
   "diagnosis.write",
   "medication.write",
   "visit.write",
+  "sync.resolve",
 ]);
 
 /** Whether the role has the permission at all (ignoring which trip). For UI only. */
