@@ -15,12 +15,20 @@ async function db<T>(fn: (c: Client) => Promise<T>): Promise<T> {
   }
 }
 
-const idleMinutes = (email: string) =>
+/**
+ * This browser's own session (by its cookie token). The desktop and phone runs
+ * use the same accounts at the same time, so "the user's sessions" would mix
+ * them up.
+ */
+async function sessionToken(page: Page): Promise<string> {
+  const cookie = (await page.context().cookies()).find((c) => c.name.endsWith("session_token"));
+  if (!cookie) throw new Error("no session cookie");
+  return decodeURIComponent(cookie.value).split(".")[0];
+}
+
+const idleMinutes = (token: string) =>
   db(async (c) => {
-    const r = await c.query(
-      `SELECT extract(epoch FROM now() - max(s."updatedAt")) / 60 AS m FROM "Session" s JOIN "User" u ON u.id = s."userId" WHERE u.email = $1`,
-      [email],
-    );
+    const r = await c.query(`SELECT extract(epoch FROM now() - "updatedAt") / 60 AS m FROM "Session" WHERE token = $1`, [token]);
     return Number(r.rows[0].m);
   });
 
@@ -43,13 +51,13 @@ test("an unattended patient list doesn't keep the session alive", async ({ page 
 
   // Nobody touches the device for 3 minutes: auto-refresh must stop.
   await page.clock.fastForward("03:00");
-  await db((c) =>
-    c.query(`UPDATE "Session" SET "updatedAt" = now() - interval '29 minutes' WHERE "userId" = (SELECT id FROM "User" WHERE email = $1)`, [email]),
-  );
+  const token = await sessionToken(page);
+  const { rowCount } = await db((c) => c.query(`UPDATE "Session" SET "updatedAt" = now() - interval '29 minutes' WHERE token = $1`, [token]));
+  expect(rowCount).toBe(1);
   // Let time run for real (Next's own timers need it) through at least one refresh tick.
   await page.clock.resume();
   await page.waitForTimeout(12_000);
-  expect(await idleMinutes(email)).toBeGreaterThan(28);
+  expect(await idleMinutes(token)).toBeGreaterThan(28);
 });
 
 test("after 30 idle minutes the browser signs out for real", async ({ page }) => {

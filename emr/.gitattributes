@@ -1,0 +1,5 @@
+# Windows field scripts must have CRLF line endings (cmd.exe misreads LF-only .bat files).
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+# Migration checksums must match everywhere.
+*.sql text eol=lf

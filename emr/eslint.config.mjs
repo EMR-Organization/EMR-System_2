@@ -44,6 +44,8 @@ const eslintConfig = defineConfig([
     "playwright-report/**",
     "test-results/**",
     "src/generated/**",
+    "dist/**",
+    "deploy/.cache/**",
   ]),
 ]);
 

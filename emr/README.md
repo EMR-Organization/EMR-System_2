@@ -55,6 +55,28 @@ docker run -d --name emr-dev-db -e POSTGRES_USER=emr_owner -e POSTGRES_PASSWORD=
 
 CI runs lint, guards, typecheck, tests, build and the runtime audit on every pull request.
 
+## Windows field bundle
+
+In the field the EMR runs from one folder on a Windows laptop: no installer, no Docker, no internet. `deploy/build-bundle.mjs` makes that folder. It downloads Node.js, PostgreSQL 16 and Caddy at the versions pinned in `deploy/versions.json` and checks each checksum. It then adds the standalone server, the command-line tools compiled to plain `.mjs` (`deploy/build-tools.mjs`), the migrations, and the scripts in `deploy/windows/`.
+
+- **Get a bundle:** run the CI workflow by hand (Actions → CI → Run workflow) and download the `EMR-windows-…` artifact of the `windows` job. Or, on a Windows PC: `npm ci`, then `node deploy/build-bundle.mjs`. It must be built on Windows, because the native modules (argon2, sharp) are per platform.
+- **Use it:** copy the folder to `C:\EMR` and follow its `README.txt`:
+  - `setup.bat` (hub or fallback)
+  - `start-hub.bat` / `start-standalone.bat`
+  - `stop.bat`, `backup.bat`
+  - `emr-tool.bat <tool>`
+- **What runs where:**
+  - Caddy is the only program on the network: HTTPS on 443 with its own local CA, and the firewall rule allows the local subnet only.
+  - The app listens on 127.0.0.1:3000 and PostgreSQL on 127.0.0.1:5433.
+  - Secrets are generated per laptop into `config\emr.env`, readable only by that Windows account.
+  - Data lives in `data\`.
+- **Migrations in the field** use `scripts/migrate.ts` (no Prisma CLI on Windows). It writes the same `_prisma_migrations` table with the same checksums, so `prisma migrate status` agrees with it. This is tested in `tests/integration/migrate.test.ts`.
+- **CI:** the `windows` job builds the bundle and runs it end to end:
+  - setup, then start-hub, then HTTPS checks on localhost, the hub name and the LAN IP
+  - the app and database ports must be unreachable on the LAN address
+  - backup, provision-node, stop
+  - a fallback set up from the hub's provisioning file, run standalone, which exports a sync bundle
+
 ## Guardrails (CI fails if you break these)
 
 - **Only `src/server/` may import the database or Prisma.** Pages, components and server actions call services in `src/server/services/`, which check permissions and write the audit log.
