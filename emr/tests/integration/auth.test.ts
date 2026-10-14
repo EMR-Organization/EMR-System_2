@@ -101,8 +101,11 @@ describe("signIn", () => {
     const user = await createUser();
     const wrong = users.signIn({ email: user.email, password: "wrong password here" });
     const unknown = users.signIn({ email: `nobody-${crypto.randomUUID()}@example.org`, password: "whatever passw0rd" });
-    await expect(wrong).rejects.toMatchObject({ messageKey: "invalidCredentials" });
-    await expect(unknown).rejects.toMatchObject({ messageKey: "invalidCredentials" });
+    // Awaited together: awaiting one first would leave the other's rejection unhandled if it came first.
+    await Promise.all([
+      expect(wrong).rejects.toMatchObject({ messageKey: "invalidCredentials" }),
+      expect(unknown).rejects.toMatchObject({ messageKey: "invalidCredentials" }),
+    ]);
   });
 
   it("tells pending and disabled users their status only after a correct password, with no session", async () => {
