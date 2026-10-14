@@ -9,12 +9,16 @@ import { seal, unseal } from "@/server/sealed";
 // writes everyone's accounts (with password hashes), the trips and who's
 // switched on where, encrypted with SYNC_KEY. Each fallback laptop loads it so
 // the same logins work there. Fallbacks start with no patients.
+//
+// Admin accounts are never provisioned (trip lead's decision, 2026-10-14): a
+// stolen fallback then holds no admin password hash to crack offline. A
+// fallback only runs while the hub is down; admin work waits for the hub.
 
-/** On the hub: the provisioning file's bytes (encrypted). Active accounts only. */
+/** On the hub: the provisioning file's bytes (encrypted). Active doctors and students only. */
 export async function buildProvisionFile(): Promise<{ file: Buffer; counts: { users: number; trips: number; members: number } }> {
   const [users, trips, members] = await Promise.all([
     db.user.findMany({
-      where: { status: "ACTIVE" },
+      where: { status: "ACTIVE", role: { not: "ADMIN" } },
       select: { id: true, email: true, name: true, role: true, specialty: true, accounts: { where: { providerId: "credential" }, select: { password: true } } },
     }),
     db.trip.findMany({ select: { id: true, code: true, name: true, month: true, year: true, location: true, active: true } }),
@@ -61,6 +65,11 @@ export async function loadProvisionFile(file: Buffer, options: { firstNumber?: n
     async (tx) => {
       const loaded: string[] = [];
       for (const u of data.users) {
+        if (u.role === "ADMIN") {
+          // A file made before admins were left out: don't load them.
+          skipped.push(`user ${u.email}: admin accounts aren't loaded on fallback laptops`);
+          continue;
+        }
         const clash = await tx.user.findUnique({ where: { email: u.email }, select: { id: true } });
         if (clash && clash.id !== u.id) {
           // A local account (e.g. made with create-admin on this laptop) holds the

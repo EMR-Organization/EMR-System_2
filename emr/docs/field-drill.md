@@ -39,7 +39,7 @@ Use made-up patients only (for example "Test Drill 1"). Delete them afterwards (
 
 - [ ] Fallback provisioned from the hub ([before the trip](before-the-trip.md#6-set-up-each-fallback)); `provision.hfprov` deleted afterwards.
 - [ ] Pull the hub's power (simulating a crash) mid-shift.
-- [ ] On the fallback: `start-standalone.bat`; sign in with a normal account; register 2 patients (numbers 5001, 5002) and edit one patient that already existed.
+- [ ] On the fallback: `start-standalone.bat`; an admin account can't sign in there (correct); sign in with a doctor account; register 2 patients (numbers 5001, 5002) and edit one patient that already existed.
 - [ ] Meanwhile, on the hub after it boots: `start-hub.bat` recovers the database by itself; edit the **same** existing patient differently.
 - [ ] Fallback: `emr-tool.bat export-bundle`; hub: Admin → Sync → check, then import. The 2 new patients get hub numbers (their 5001/5002 labels still find them in search), and the patient edited on both sides appears under *Conflicts to resolve*. Resolve it field by field.
 - [ ] Import the same bundle again: nothing is added.

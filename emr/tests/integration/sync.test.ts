@@ -11,6 +11,7 @@ vi.mock("next/headers.js", () => import("./fake-request"));
 
 import { verifyChain } from "@/server/audit";
 import { resetRateLimits } from "@/server/auth/rate-limit";
+import type { Provision } from "@/lib/shared/schemas/sync";
 import { db } from "@/server/db";
 import { ForbiddenError } from "@/server/errors";
 import * as hubPatients from "@/server/services/patients";
@@ -18,6 +19,7 @@ import { searchPatients } from "@/server/services/search";
 import { getConflict, importSyncFile, listConflicts, resolveConflict } from "@/server/services/sync";
 import { signIn } from "@/server/services/users";
 import { buildBundleFile } from "@/server/sync/export";
+import { seal, unseal } from "@/server/sealed";
 import { buildProvisionFile } from "@/server/sync/provision";
 import { browser } from "./fake-request";
 import { createTrip, createUser } from "./fixtures";
@@ -154,6 +156,31 @@ describe("offline fallback and sync", async () => {
     });
     expect(loaded.users).toBeGreaterThan(0);
     expect(fallbackLabel).toMatch(/^5001_/);
+  }, 60_000);
+
+  it("leaves admin accounts off fallbacks, even from an older file that has them", async () => {
+    const { file } = await buildProvisionFile();
+    const inFile = JSON.parse(unseal("provision", file).toString("utf8")) as Provision;
+    expect(inFile.users.some((u) => u.role === "ADMIN")).toBe(false);
+    expect(inFile.users.some((u) => u.id === doctor.id)).toBe(true);
+
+    // An older provisioning file that still carried an admin.
+    const adminRow = await db.user.findUniqueOrThrow({ where: { id: admin.id }, include: { accounts: true } });
+    const older = seal(
+      "provision",
+      Buffer.from(
+        JSON.stringify({
+          ...inFile,
+          users: [...inFile.users, { id: admin.id, email: admin.email, name: adminRow.name, role: "ADMIN", specialty: null, passwordHash: adminRow.accounts[0].password }],
+        }),
+      ),
+    );
+    await onFallback(async (m) => {
+      const result = await m.provision.loadProvisionFile(older);
+      expect(result.skipped.join("\n")).toMatch(/admin accounts aren't loaded/);
+      await expect(m.signInAs(admin)).rejects.toThrow();
+      await m.signInAs(doctor); // everyone else still works
+    });
   }, 60_000);
 
   it("imports a bundle: dry run first, then new records as-is with a hub number, photos and audit entries", async () => {
