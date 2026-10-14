@@ -96,8 +96,8 @@ const medication = z.object({
   ...origin,
 });
 
-export const tripDataPatientSchema = z
-  .object({
+/** A patient's own fields (no records), shared with sync bundles. */
+export const patientFields = {
     id,
     displayNumber: z.number().int().min(1).max(999_999),
     originLabel: str(60),
@@ -116,6 +116,15 @@ export const tripDataPatientSchema = z
     waterNotes: str(2000),
     assignedSpecialty: specialty,
     ...origin,
+};
+
+/** The record shapes, shared with sync bundles. */
+export const recordSchemas = { condition, vitals, diabetic, visit, medication };
+export const fieldTypes = { id, str, day, instant, int };
+
+export const tripDataPatientSchema = z
+  .object({
+    ...patientFields,
     conditions: z.array(condition).max(500).default([]),
     vitals: z.array(vitals).max(2000).default([]),
     diabetic: z.array(diabetic).max(2000).default([]),

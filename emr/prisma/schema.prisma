@@ -440,11 +440,40 @@ model SyncConflict {
   entityId     String         @db.Uuid
   hubVersion   Int
   incoming     Json
+  /// Hash of the incoming fields, so importing the same bundle again doesn't queue it twice.
+  incomingHash String
   sourceNodeId String
   status       ConflictStatus @default(OPEN)
   resolvedById String?        @db.Uuid
   resolvedAt   DateTime?
   createdAt    DateTime       @default(now())
 
+  @@unique([entity, entityId, sourceNodeId, incomingHash])
   @@index([status])
+}
+
+/// What the hub last accepted for a record from a fallback node (content hash +
+/// that node's version). Lets an import tell "only the fallback changed it"
+/// (apply) from "both sides changed it" (conflict).
+model SyncRecord {
+  entity       String
+  entityId     String   @db.Uuid
+  sourceNodeId String
+  version      Int
+  contentHash  String
+  updatedAt    DateTime @updatedAt
+
+  @@id([entity, entityId, sourceNodeId])
+}
+
+/// Per fallback node: how far each of its audit chains has been appended to
+/// the hub's. A chain is named by the hash of its first entry, so a laptop
+/// reinstalled with the same NODE_ID (IDs restart at 1) is a new chain, and an
+/// old bundle from before the reinstall still adds nothing twice.
+model SyncNode {
+  nodeId       String    @id
+  /// { "<first entry hash>": "<last appended audit id>" }
+  auditMarks   Json      @default("{}")
+  lastImportAt DateTime?
+  imports      Int       @default(0)
 }

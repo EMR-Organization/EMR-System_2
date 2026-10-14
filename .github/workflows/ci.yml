@@ -34,6 +34,7 @@ jobs:
       BETTER_AUTH_SECRET: ci-only-secret-not-for-real-use-0123456789
       AUDIT_KEY: ci-only-audit-key-not-for-real-use-0123456789
       BACKUP_KEY: ci-only-backup-key-not-for-real-use-0123456789
+      SYNC_KEY: ci-only-sync-key-not-for-real-use-0123456789
       TRUST_PROXY: "1"
       ALLOWED_EMAIL_DOMAINS: example.org
       NODE_ID: ci
@@ -98,6 +99,7 @@ jobs:
           echo "BETTER_AUTH_SECRET=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
           echo "AUDIT_KEY=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
           echo "BACKUP_KEY=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
+          echo "SYNC_KEY=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
       # Backups run pg_dump/pg_restore, which must match the server's major version (16).
       - name: PostgreSQL 16 client tools
         working-directory: .

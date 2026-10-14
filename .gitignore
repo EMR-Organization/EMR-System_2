@@ -2,3 +2,8 @@
 *.pem
 *.key
 *.crt
+
+# Backups, provisioning files and sync bundles hold patient data or password hashes
+*.hfbak
+*.hfprov
+*.hfsync

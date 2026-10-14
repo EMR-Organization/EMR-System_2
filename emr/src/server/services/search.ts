@@ -13,7 +13,8 @@ import { parse } from "@/server/validation";
 // reach: every trip for doctors and admins, switched-on trips for students.
 //
 // Matches names (accent- and case-insensitive, every word must match), the
-// patient number (12, 012 or 012_05_2026), phone digits, and date of birth.
+// patient number (12, 012 or 012_05_2026) or a number it had elsewhere
+// (originLabel), phone digits, and date of birth.
 // Diagnoses aren't searched: students can't read them.
 
 export const SEARCH_LIMIT = 50;
@@ -84,7 +85,9 @@ export async function searchPatients(input: unknown): Promise<{ results: SearchR
 }
 
 function matchConditions(q: string): Prisma.Sql[] {
-  const conditions: Prisma.Sql[] = [];
+  // The number a patient had elsewhere (a fallback laptop's 5001_05_2026, the old app's PT1001),
+  // as written on paper notes.
+  const conditions: Prisma.Sql[] = [Prisma.sql`lower(p."originLabel") = lower(${q})`];
 
   const label = parsePatientLabel(q);
   if (label) {
@@ -111,7 +114,7 @@ function matchConditions(q: string): Prisma.Sql[] {
       )})`,
     );
   }
-  return conditions.length > 0 ? conditions : [Prisma.sql`FALSE`];
+  return conditions;
 }
 
 /** 2026-05-07, 07/05/2026 or 7-5-2026 (day first, as written in Latin America). */

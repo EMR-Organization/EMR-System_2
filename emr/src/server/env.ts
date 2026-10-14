@@ -42,6 +42,11 @@ const schema = z.object({
    * lost, its backups can't be restored without it.
    */
   BACKUP_KEY: secret("BACKUP_KEY"),
+  /**
+   * Encrypts provisioning files and sync bundles. The SAME value on the hub and
+   * every fallback laptop of a deployment (the field setup copies it).
+   */
+  SYNC_KEY: secret("SYNC_KEY"),
   /** Where encrypted backups are written (kept 14 days). */
   BACKUP_DIR: z.string().min(1).default("data/backups"),
   /** Folder holding pg_dump / pg_restore when they aren't on PATH (the Windows bundle's PostgreSQL bin). */

@@ -35,11 +35,7 @@ export type AuditInput = {
 export type AuditSubject = Actor | { userId: string | null; ip?: string | null } | null;
 
 export async function audit(tx: Tx, subject: AuditSubject, input: AuditInput): Promise<void> {
-  await tx.$executeRaw`SELECT pg_advisory_xact_lock(${AUDIT_LOCK_KEY})`;
-  const last = await tx.auditLog.findFirst({ orderBy: { id: "desc" }, select: { hash: true } });
-  const prevHash = last?.hash ?? GENESIS_HASH;
-
-  const entry = {
+  await append(tx, {
     ts: new Date(),
     userId: subject && "sessionId" in subject ? subject.id : (subject?.userId ?? null),
     sessionId: subject && "sessionId" in subject ? subject.sessionId : null,
@@ -50,10 +46,23 @@ export async function audit(tx: Tx, subject: AuditSubject, input: AuditInput): P
     ip: subject?.ip ?? null,
     details: input.details ?? null,
     originNodeId: env().NODE_ID,
-  };
+  });
+}
 
+/**
+ * Appends an entry recorded on a fallback laptop (sync import), keeping its
+ * original time, user and node. It joins this hub's chain like any other entry.
+ */
+export function appendForeignEntry(tx: Tx, entry: HashedFields): Promise<void> {
+  return append(tx, entry);
+}
+
+async function append(tx: Tx, entry: HashedFields): Promise<void> {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(${AUDIT_LOCK_KEY})`;
+  const last = await tx.auditLog.findFirst({ orderBy: { id: "desc" }, select: { hash: true } });
+  const prevHash = last?.hash ?? GENESIS_HASH;
   await tx.auditLog.create({
-    data: { ...entry, details: entry.details ?? undefined, prevHash, hash: hashEntry(prevHash, entry) },
+    data: { ...entry, details: (entry.details ?? undefined) as never, prevHash, hash: hashEntry(prevHash, entry) },
   });
 }
 
@@ -62,7 +71,7 @@ export function auditOnly(subject: AuditSubject, input: AuditInput): Promise<voi
   return db.$transaction((tx) => audit(tx, subject, input));
 }
 
-type HashedFields = {
+export type HashedFields = {
   ts: Date;
   userId: string | null;
   sessionId: string | null;
