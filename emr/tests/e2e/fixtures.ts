@@ -15,8 +15,8 @@ export function uniqueIp() {
 // (src/lib/shared/csp.ts), from any device a test opened.
 const cspViolations: string[] = [];
 
-export async function newDevice(browser: Browser): Promise<BrowserContext> {
-  const context = await browser.newContext({ extraHTTPHeaders: { "x-forwarded-for": uniqueIp() } });
+export async function newDevice(browser: Browser, options: { locale?: string } = {}): Promise<BrowserContext> {
+  const context = await browser.newContext({ ...options, extraHTTPHeaders: { "x-forwarded-for": uniqueIp() } });
   context.on("console", (msg) => {
     if (/Content Security Policy/i.test(msg.text())) cspViolations.push(`${msg.location().url}: ${msg.text()}`);
   });

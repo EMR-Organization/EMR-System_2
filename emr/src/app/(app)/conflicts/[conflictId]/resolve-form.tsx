@@ -3,9 +3,28 @@
 import { useTranslations } from "next-intl";
 import { FormError, useServerForm } from "@/components/form";
 import { Button } from "@/components/ui/button";
+import { optionLabel, type OptionGroup } from "@/lib/option-label";
 import { resolveConflictAction } from "../actions";
 
 type Value = string | number | boolean | string[] | null;
+
+// Fields stored as a fixed-list value or a code, shown in the reader's language.
+const OPTION_FIELDS: Record<string, OptionGroup> = {
+  waterSource: "waterSources",
+  waterHistory: "waterConditions",
+  visitType: "visitTypes",
+  name: "medications",
+  frequency: "frequencies",
+  route: "routes",
+};
+const CODE_FIELDS: Record<string, string> = {
+  gender: "Gender",
+  ageUnit: "Sync.ageUnits",
+  waterRiskRating: "Risk",
+  assignedSpecialty: "Specialties",
+  specialty: "Specialties",
+  status: "Sync.medicationStatuses",
+};
 
 export function ResolveForm({
   conflictId,
@@ -22,10 +41,24 @@ export function ResolveForm({
   lockedFields: string[];
 }) {
   const t = useTranslations("Sync");
+  const o = useTranslations("Options");
+  const all = useTranslations();
   // On success the action redirects to the conflict queue, which says so.
   const [state, onSubmit, pending] = useServerForm(resolveConflictAction.bind(null, conflictId, hubVersion, fields.map((f) => f.field)));
 
-  const show = (v: Value) => (v === null ? "—" : Array.isArray(v) ? v.join(", ") || "—" : typeof v === "boolean" ? (v ? t("yes") : t("no")) : String(v));
+  const label = (field: string, v: string) => {
+    if (OPTION_FIELDS[field]) return optionLabel(o, OPTION_FIELDS[field], v);
+    const key = CODE_FIELDS[field] && `${CODE_FIELDS[field]}.${v}`;
+    return key && all.has(key) ? all(key) : v;
+  };
+  const show = (field: string, v: Value) =>
+    v === null
+      ? "—"
+      : Array.isArray(v)
+        ? v.map((x) => label(field, x)).join(", ") || "—"
+        : typeof v === "boolean"
+          ? v ? t("yes") : t("no")
+          : label(field, String(v));
   return (
     <form onSubmit={onSubmit} className="grid gap-4">
       <FormError state={state} />
@@ -36,14 +69,14 @@ export function ResolveForm({
             <input type="radio" name={`choice:${field}`} value="hub" defaultChecked className="mt-1" />
             <span className="grid">
               <span className="text-xs text-muted-foreground">{t("keepHub")}</span>
-              <span className="whitespace-pre-wrap break-words">{show(hub)}</span>
+              <span className="whitespace-pre-wrap break-words">{show(field, hub)}</span>
             </span>
           </label>
           <label className="flex items-start gap-2 text-sm">
             <input type="radio" name={`choice:${field}`} value="incoming" disabled={lockedFields.includes(field)} className="mt-1" />
             <span className="grid">
               <span className="text-xs text-muted-foreground">{t("takeLaptop", { node })}</span>
-              <span className="whitespace-pre-wrap break-words">{show(incoming)}</span>
+              <span className="whitespace-pre-wrap break-words">{show(field, incoming)}</span>
             </span>
           </label>
           {lockedFields.includes(field) && <p className="text-xs text-muted-foreground">{t("adminOnlyField")}</p>}

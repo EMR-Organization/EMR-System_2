@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { AgeText } from "@/components/age";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +34,8 @@ async function Results({ searchParams }: Props) {
   const q = (Array.isArray(raw) ? raw[0] : raw)?.trim().slice(0, 100) ?? "";
   // Each search is audited, so it only runs on a real query.
   const found = q.length >= 2 ? await orSignIn(() => searchPatients({ q })) : null;
+  // "Today" (for ages) is per request: never let it be baked into a prerender.
+  await connection();
   const today = localDay();
 
   return (

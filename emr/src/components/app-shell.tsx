@@ -5,6 +5,7 @@ import { roleHas } from "@/lib/shared/permissions";
 import { orSignIn } from "@/server/page";
 import { me } from "@/server/services/users";
 import { NavLinks, type NavItem } from "./app-nav-links";
+import { LanguageSwitcher } from "./language-switcher";
 import { SessionTimeoutWarning } from "./session-timeout-warning";
 import { SignOutButton } from "./sign-out-button";
 
@@ -20,6 +21,7 @@ export async function AppShell({ children }: { children: ReactNode }) {
           <Link href="/trips" className="font-semibold tracking-tight text-primary">
             {c("appName")}
           </Link>
+          <LanguageSwitcher className="md:mt-2 md:-ml-1.5" />
         </div>
         <Suspense fallback={<div className="h-10 px-4 text-sm text-muted-foreground">{c("loading")}</div>}>
           <UserNav />

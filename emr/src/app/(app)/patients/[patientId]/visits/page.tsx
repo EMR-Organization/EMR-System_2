@@ -1,4 +1,5 @@
 import { getFormatter, getTranslations } from "next-intl/server";
+import { optionLabel } from "@/lib/option-label";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +24,7 @@ async function Visits({ params }: Pick<Props, "params">) {
   const t = await getTranslations("Visits");
   const d = await getTranslations("Diagnosis");
   const sp = await getTranslations("Specialties");
+  const o = await getTranslations("Options");
   const format = await getFormatter();
   const { patientId } = await params;
   const p = await orSignIn(() => loadPatient(patientId));
@@ -47,7 +49,7 @@ async function Visits({ params }: Pick<Props, "params">) {
               {visits.map((v) => (
                 <li key={v.id} className="grid gap-1 py-3 text-sm">
                   <span className="flex flex-wrap items-center gap-2 font-medium">
-                    {day(v.date)} · {v.visitType}
+                    {day(v.date)} · {optionLabel(o, "visitTypes", v.visitType)}
                     {v.tripVisit && <Badge>{t("tripVisit")}</Badge>}
                     {v.specialty && <Badge variant="secondary">{sp(v.specialty)}</Badge>}
                   </span>
@@ -72,7 +74,7 @@ async function Visits({ params }: Pick<Props, "params">) {
                   )}
                   {v.medications.length > 0 && (
                     <span className="text-muted-foreground">
-                      {t("prescribed", { list: v.medications.map((m) => `${m.name} ${m.dosage ?? ""}`.trim()).join(", ") })}
+                      {t("prescribed", { list: v.medications.map((m) => `${optionLabel(o, "medications", m.name)} ${m.dosage ?? ""}`.trim()).join(", ") })}
                     </span>
                   )}
                   {v.followUpDate && <span>{t("followUp", { date: day(v.followUpDate) })}</span>}

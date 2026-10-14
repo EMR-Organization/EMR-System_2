@@ -214,7 +214,6 @@
     "overview": "Overview",
     "members": "Students",
     "patients": "Patients",
-    "patientsSoon": "Patient registration arrives in the next phase.",
     "code": "Code {code}",
     "statPatients": "Patients registered",
     "statusCurrent": "Current trip",
@@ -606,7 +605,7 @@
   },
   "Sync": {
     "title": "Sync",
-    "intro": "Bring records from a fallback laptop back into the hub. Nothing on the hub is overwritten: edits made on both sides wait below for you to choose.",
+    "intro": "Bring records from a fallback laptop back into the hub. Nothing on the hub is overwritten: edits made on both sides wait on the Conflicts page for someone to choose.",
     "importTitle": "Import a bundle",
     "importIntro": "Made on the fallback laptop with emr-tool.bat export-bundle. Importing the same bundle again adds nothing.",
     "file": "Bundle file (.hfsync)",
@@ -620,7 +619,7 @@
     "summaryPatients": "{count, plural, =0 {add no new patients} one {add # new patient} other {add # new patients}}",
     "summaryRecords": "add {count} records, apply {applied} edits made only on the laptop ({here} already here)",
     "summaryAudit": "{count, plural, one {append # audit entry} other {append # audit entries}} from the laptop",
-    "summaryConflicts": "{count, plural, one {# record was} other {# records were}} edited on both sides: see the queue below.",
+    "summaryConflicts": "{count, plural, one {# record was} other {# records were}} edited on both sides: see Conflicts.",
     "summaryTrips": "create trips: {codes}",
     "summaryNumbers": "New hub numbers (the laptop numbers stay on the record and are searchable):",
     "queueTitle": "Conflicts to resolve",
@@ -677,7 +676,15 @@
       "status": "Status",
       "discontinueReason": "Reason stopped"
     },
-    "back": "← Sync",
+    "ageUnits": {
+      "YEARS": "Years",
+      "MONTHS": "Months"
+    },
+    "medicationStatuses": {
+      "ACTIVE": "Active",
+      "DISCONTINUED": "Discontinued"
+    },
+    "back": "← Conflicts",
     "conflictTitle": "Conflict: {entity}",
     "conflictIntro": "Edited on the hub and on {node} (found {time}). The hub’s copy is kept unless you choose the laptop’s.",
     "chooseTitle": "Choose for each field",
@@ -689,5 +696,126 @@
     "nowSame": "The hub already matches the laptop’s version for every field. Saving closes the conflict.",
     "yes": "Yes",
     "no": "No"
+  },
+  "Options": {
+    "conditions": {
+      "None": "None",
+      "Diabetes Type 1": "Diabetes Type 1",
+      "Diabetes Type 2": "Diabetes Type 2",
+      "Hypertension": "Hypertension",
+      "Heart Disease": "Heart Disease",
+      "Asthma": "Asthma",
+      "COPD": "COPD",
+      "Chronic Kidney Disease": "Chronic Kidney Disease",
+      "Liver Disease": "Liver Disease",
+      "Thyroid Disorder": "Thyroid Disorder",
+      "Anemia": "Anemia",
+      "Arthritis": "Arthritis",
+      "Cancer": "Cancer",
+      "HIV/AIDS": "HIV/AIDS",
+      "Tuberculosis": "Tuberculosis",
+      "Hepatitis": "Hepatitis",
+      "Malaria (Recurring)": "Malaria (Recurring)",
+      "Cholera (History)": "Cholera (History)",
+      "Typhoid (History)": "Typhoid (History)",
+      "Dysentery (History)": "Dysentery (History)",
+      "Parasitic Infection": "Parasitic Infection",
+      "Other": "Other"
+    },
+    "waterConditions": {
+      "Cholera": "Cholera",
+      "Typhoid Fever": "Typhoid Fever",
+      "Dysentery": "Dysentery",
+      "Hepatitis A": "Hepatitis A",
+      "Giardiasis": "Giardiasis",
+      "Cryptosporidiosis": "Cryptosporidiosis",
+      "Lead Poisoning": "Lead Poisoning",
+      "Arsenic Poisoning": "Arsenic Poisoning",
+      "Fluorosis": "Fluorosis",
+      "Parasitic Worms": "Parasitic Worms"
+    },
+    "waterSources": {
+      "Municipal/Treated Water": "Municipal/Treated Water",
+      "Well Water": "Well Water",
+      "River/Stream": "River/Stream",
+      "Rainwater Collection": "Rainwater Collection",
+      "Shared Community Source": "Shared Community Source",
+      "Unknown/Untreated": "Unknown/Untreated"
+    },
+    "medications": {
+      "Metformin": "Metformin",
+      "Insulin (various types)": "Insulin (various types)",
+      "Lisinopril": "Lisinopril",
+      "Amlodipine": "Amlodipine",
+      "Atorvastatin": "Atorvastatin",
+      "Metoprolol": "Metoprolol",
+      "Omeprazole": "Omeprazole",
+      "Losartan": "Losartan",
+      "Gabapentin": "Gabapentin",
+      "Hydrochlorothiazide": "Hydrochlorothiazide",
+      "Aspirin": "Aspirin",
+      "Ibuprofen": "Ibuprofen",
+      "Acetaminophen": "Acetaminophen",
+      "Amoxicillin": "Amoxicillin",
+      "Ciprofloxacin": "Ciprofloxacin",
+      "Azithromycin": "Azithromycin",
+      "Prednisone": "Prednisone",
+      "Albuterol": "Albuterol",
+      "Fluticasone": "Fluticasone",
+      "Levothyroxine": "Levothyroxine",
+      "Other": "Other"
+    },
+    "frequencies": {
+      "Once daily": "Once daily",
+      "Twice daily": "Twice daily",
+      "Three times daily": "Three times daily",
+      "Four times daily": "Four times daily",
+      "Every 8 hours": "Every 8 hours",
+      "Every 12 hours": "Every 12 hours",
+      "As needed": "As needed",
+      "Weekly": "Weekly",
+      "Monthly": "Monthly"
+    },
+    "routes": {
+      "Oral": "Oral",
+      "Injection": "Injection",
+      "Topical": "Topical",
+      "Inhaled": "Inhaled",
+      "Sublingual": "Sublingual",
+      "IV": "IV",
+      "Other": "Other"
+    },
+    "glucoseTimings": {
+      "Fasting": "Fasting",
+      "Before Meal": "Before Meal",
+      "After Meal (2 hrs)": "After Meal (2 hrs)",
+      "Random": "Random",
+      "Bedtime": "Bedtime"
+    },
+    "insulinTypes": {
+      "None": "None",
+      "Rapid-acting": "Rapid-acting",
+      "Short-acting": "Short-acting",
+      "Intermediate-acting": "Intermediate-acting",
+      "Long-acting": "Long-acting",
+      "Mixed": "Mixed"
+    },
+    "visitTypes": {
+      "Regular Checkup": "Regular Checkup",
+      "Follow-up": "Follow-up",
+      "Emergency": "Emergency",
+      "Consultation": "Consultation",
+      "Procedure": "Procedure",
+      "Lab Work": "Lab Work",
+      "Trip Visit": "Trip Visit"
+    },
+    "photoCategories": {
+      "General": "General",
+      "Wound/Injury": "Wound/Injury",
+      "Skin Condition": "Skin Condition",
+      "X-Ray": "X-Ray",
+      "Lab Results": "Lab Results",
+      "Other Documentation": "Other Documentation"
+    }
   }
 }

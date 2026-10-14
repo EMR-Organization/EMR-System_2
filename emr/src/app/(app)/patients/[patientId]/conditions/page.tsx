@@ -1,4 +1,5 @@
 import { getFormatter, getTranslations } from "next-intl/server";
+import { optionLabel } from "@/lib/option-label";
 import { Suspense } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +22,7 @@ export default function ConditionsPage({ params }: Props) {
 async function Conditions({ params }: Pick<Props, "params">) {
   const t = await getTranslations("Conditions");
   const sev = await getTranslations("Severity");
+  const o = await getTranslations("Options");
   const format = await getFormatter();
   const { patientId } = await params;
   const p = await orSignIn(() => loadPatient(patientId));
@@ -42,7 +44,7 @@ async function Conditions({ params }: Pick<Props, "params">) {
               {entries.map((c) => (
                 <li key={c.id} className="grid gap-1 py-3 text-sm">
                   <span className="flex flex-wrap items-center gap-2 font-medium">
-                    {c.condition}
+                    {optionLabel(o, "conditions", c.condition)}
                     {c.severity && <Badge variant={c.severity === "SEVERE" ? "destructive" : "secondary"}>{sev(c.severity)}</Badge>}
                   </span>
                   {c.diagnosisDate && (

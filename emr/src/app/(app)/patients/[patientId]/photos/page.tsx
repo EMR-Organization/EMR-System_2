@@ -1,4 +1,5 @@
 import { getFormatter, getTranslations } from "next-intl/server";
+import { optionLabel } from "@/lib/option-label";
 import { Suspense } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +21,7 @@ export default function PhotosPage({ params }: Props) {
 
 async function Photos({ params }: Pick<Props, "params">) {
   const t = await getTranslations("Photos");
+  const o = await getTranslations("Options");
   const format = await getFormatter();
   const { patientId } = await params;
   const p = await orSignIn(() => loadPatient(patientId));
@@ -47,14 +49,14 @@ async function Photos({ params }: Pick<Props, "params">) {
                       {/* eslint-disable-next-line @next/next/no-img-element -- private, per-user images; never through the image optimizer cache */}
                       <img
                         src={`/api/photos/${ph.id}`}
-                        alt={t("alt", { kind, description: ph.description ?? ph.category ?? "" })}
+                        alt={t("alt", { kind, description: ph.description ?? (ph.category ? optionLabel(o, "photoCategories", ph.category) : "") })}
                         loading="lazy"
                         className="aspect-square w-full rounded-lg border object-cover"
                       />
                     </a>
                     <span className="flex flex-wrap gap-1">
                       <Badge variant={ph.kind === "PROFILE" ? "default" : "secondary"}>{kind}</Badge>
-                      {ph.category && <Badge variant="outline">{ph.category}</Badge>}
+                      {ph.category && <Badge variant="outline">{optionLabel(o, "photoCategories", ph.category)}</Badge>}
                     </span>
                     {ph.description && <span>{ph.description}</span>}
                     <span className="text-muted-foreground">
