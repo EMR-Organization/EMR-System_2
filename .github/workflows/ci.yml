@@ -171,6 +171,11 @@ jobs:
           if (-not (Get-ScheduledTask -TaskName 'HF EMR nightly backup' -ErrorAction SilentlyContinue)) { throw 'no backup task' }
           if (-not (Select-String -Path C:\EMR\config\emr.env -Pattern '^SYNC_KEY="[A-Za-z0-9_-]{40,}"$' -Quiet)) { throw 'no generated SYNC_KEY' }
           if (-not (Test-Path C:\EMR\data\caddy\ca\intermediate.key)) { throw 'no HTTPS certificate authority' }
+          # Other local accounts must not be able to swap the programs start-hub runs.
+          foreach ($f in 'C:\EMR', 'C:\EMR\app\server.js', 'C:\EMR\runtime\node\node.exe', 'C:\EMR\start-hub.bat') {
+            $acl = (icacls $f) -join "`n"
+            if ($acl -match 'BUILTIN\\Users|Authenticated Users|Everyone') { throw "$f still grants other accounts access:`n$acl" }
+          }
 
       - name: Hub - start and check what the network can reach
         timeout-minutes: 10
@@ -212,9 +217,19 @@ jobs:
           C:\EMR\emr-tool.bat provision-node --out C:\provision.hfprov
           if ($LASTEXITCODE -or -not (Test-Path C:\provision.hfprov)) { throw 'provision-node failed' }
 
+          # Swapping in a restored backup needs the EMR stopped; emr-tool refuses while it runs.
+          $bak = (Get-ChildItem C:\EMR\data\backups\*.hfbak | Sort-Object LastWriteTime | Select-Object -Last 1).FullName
+          C:\EMR\emr-tool.bat restore $bak --swap
+          if (-not $LASTEXITCODE) { throw 'restore --swap ran while the EMR was up' }
+
           C:\EMR\stop.bat
           Start-Sleep 3
           foreach ($port in @(443, 3000, 5433)) { if (Test-Port '127.0.0.1' $port) { throw "port $port still open after stop" } }
+
+          # With the EMR stopped, emr-tool starts the database itself, restores, and stops it again.
+          C:\EMR\emr-tool.bat restore $bak --swap
+          if ($LASTEXITCODE) { throw 'restore --swap failed' }
+          if (Test-Port '127.0.0.1' 5433) { throw 'emr-tool left the database running' }
 
       - name: Fallback - setup from the hub's file, run standalone, export a bundle
         timeout-minutes: 15

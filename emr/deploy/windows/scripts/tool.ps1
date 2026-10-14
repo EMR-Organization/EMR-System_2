@@ -3,7 +3,9 @@
 #   emr-tool.bat load-provision E:\x.hfprov --first-number 5001   (fallback)
 #   emr-tool.bat export-bundle             (fallback, when the hub is back)
 #   emr-tool.bat create-admin | audit-checkpoint | backup | restore <file> [--swap]
-# The database must be running (start-hub.bat or start-standalone.bat open).
+# Works with the EMR running or stopped: if the database isn't running, it is
+# started just for the tool and stopped again afterwards. restore --swap needs
+# the EMR stopped (stop.bat), since it replaces the database the app is using.
 # No param() block on purpose: every argument (including ones like --first-number) lands in $args untouched.
 $Name = ''
 $Rest = @()
@@ -18,9 +20,16 @@ if (-not $Name -or $allowed -notcontains $Name) {
     exit 1
 }
 Import-EmrEnv | Out-Null
-if (-not (Test-PgRunning)) { Stop-WithError 'The database is not running. Start the EMR first (start-hub.bat or start-standalone.bat).' }
+if ($Name -eq 'restore' -and $Rest -contains '--swap' -and (Test-Port '127.0.0.1' $AppPort)) {
+    Stop-WithError 'The EMR is running. Run stop.bat first: --swap replaces the database it is using.'
+}
+$startedPg = -not (Test-PgRunning)
+if ($startedPg) { Start-Pg }
+$failure = $null
 try {
     Invoke-Tool $Name $Rest
 } catch {
-    Stop-WithError $_.Exception.Message
+    $failure = $_.Exception.Message
 }
+if ($startedPg) { Stop-Pg }
+if ($failure) { Stop-WithError $failure }

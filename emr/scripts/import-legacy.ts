@@ -1,4 +1,5 @@
-// Imports the old Streamlit app's data folder (Electric-Medical-Record-System-Offline/emr_data).
+// Imports the old Streamlit app's data folder (its emr_data/; the app itself,
+// Electric-Medical-Record-System-Offline/, is in the git history before Phase 9).
 // Safe to run more than once: records already imported are skipped, and nothing
 // already in the database is changed. Trips that don't exist yet are created as
 // past trips (an admin can mark one current afterwards).

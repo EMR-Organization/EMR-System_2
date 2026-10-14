@@ -43,22 +43,25 @@ async function Users() {
           {pending.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t("pendingEmpty")}</p>
           ) : (
-            <ul className="divide-y">
-              {pending.map((u) => (
-                <li key={u.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-                  <div className="grid text-sm">
-                    <span className="font-medium">
-                      {u.name} <Badge variant="secondary">{r(u.role)}</Badge>
-                    </span>
-                    <span className="text-muted-foreground">{u.email}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {t("registered", { time: format.dateTime(u.createdAt, { dateStyle: "medium", timeStyle: "short" }) })}
-                    </span>
-                  </div>
-                  <PendingActions user={{ id: u.id, name: u.name }} isDoctor={u.role === "DOCTOR"} />
-                </li>
-              ))}
-            </ul>
+            <>
+              <p className="text-sm text-muted-foreground">{t("pendingCheck")}</p>
+              <ul className="divide-y">
+                {pending.map((u) => (
+                  <li key={u.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                    <div className="grid text-sm">
+                      <span className="font-medium">
+                        {u.name} <Badge variant="secondary">{r(u.role)}</Badge>
+                      </span>
+                      <span className="text-muted-foreground">{u.email}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {t("registered", { time: format.dateTime(u.createdAt, { dateStyle: "medium", timeStyle: "short" }) })}
+                      </span>
+                    </div>
+                    <PendingActions user={{ id: u.id, name: u.name }} isDoctor={u.role === "DOCTOR"} />
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
         </CardContent>
       </Card>

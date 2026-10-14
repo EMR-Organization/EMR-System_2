@@ -11,7 +11,13 @@ import { PrismaClient } from "@/generated/prisma/client";
 function createClient() {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) throw new Error("DATABASE_URL is not set");
-  return new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+  return new PrismaClient({
+    adapter: new PrismaPg({ connectionString }),
+    // Writes queue for the audit chain's lock. On a busy morning (20+ devices
+    // saving at once, slow laptop) give a transaction time to wait for a
+    // connection rather than failing after Prisma's default 2 s.
+    transactionOptions: { maxWait: 10_000, timeout: 15_000 },
+  });
 }
 
 // Reuse one client across hot reloads in development.

@@ -134,6 +134,19 @@ describe("signIn", () => {
     await expect(users.signIn({ email: user.email, password: user.password })).resolves.toEqual({ status: "ACTIVE" });
   });
 
+  it("parallel guesses still get only 5 password checks before the lock", async () => {
+    const user = await createUser();
+    const guesses = Array.from({ length: 12 }, (_, i) => users.signIn({ email: user.email, password: `parallel guess ${i}` }));
+    const results = await Promise.allSettled(guesses);
+    expect(results.every((r) => r.status === "rejected")).toBe(true);
+
+    const entries = await db.auditLog.findMany({ where: { entityId: user.id, action: { in: ["auth.signin.failed", "auth.lockout"] } } });
+    const checked = entries.filter((e) => (e.details as { reason?: string }).reason === "password");
+    expect(checked).toHaveLength(users.MAX_FAILED_LOGINS);
+    expect(entries.filter((e) => e.action === "auth.lockout")).toHaveLength(1);
+    expect((await db.user.findUniqueOrThrow({ where: { id: user.id } })).lockedUntil!.getTime()).toBeGreaterThan(Date.now());
+  });
+
   it("rate-limits by IP", async () => {
     browser.setIp("10.9.9.9");
     const email = `nobody-${crypto.randomUUID()}@example.org`;

@@ -28,7 +28,8 @@ FALLBACK (a spare laptop, used only if the hub fails)
 BACKUPS
   Nightly at 02:00 while the EMR is running, and backup.bat any time. Encrypted
   files go to data\backups (kept 14 days). Copy them to a USB stick at the end
-  of each clinic day. Restore: emr-tool.bat restore <file.hfbak> [--swap]
+  of each clinic day. Check one: emr-tool.bat restore <file.hfbak> (into a new
+  database). To switch to it: stop.bat, then emr-tool.bat restore <file> --swap
 
 UPDATING
   Stop the EMR, replace everything EXCEPT config\ and data\, start it again.

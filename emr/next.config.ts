@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 
-// Baseline headers for every response. The Content-Security-Policy (with per-request nonces)
-// is added in src/proxy.ts in Phase 9; HSTS is set by Caddy, which terminates HTTPS.
+// Baseline headers for every response. The Content-Security-Policy (with a nonce)
+// is set per request in src/proxy.ts (src/lib/shared/csp.ts); HSTS is set by Caddy, which terminates HTTPS.
 export const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },

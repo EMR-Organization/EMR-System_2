@@ -14,6 +14,15 @@ import { parse } from "@/server/validation";
 // handler at /api/patients/[id]/photos and are served only by
 // /api/photos/[id], which calls getPhoto: permission-checked and audited.
 
+/**
+ * The upload route calls this before reading the request body, so a device
+ * that may not add photos to this patient can't make the hub buffer an upload.
+ */
+export async function assertCanUploadPhoto(patientId: unknown): Promise<void> {
+  const actor = await requireUser();
+  await patientForAccess(actor, parse(z.uuid(), patientId), "photo.write");
+}
+
 export async function uploadPhoto(meta: unknown, file: Blob | null): Promise<{ id: string }> {
   const actor = await requireUser();
   const data = parse(photoMetaSchema, meta);

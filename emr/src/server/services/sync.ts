@@ -19,6 +19,12 @@ import { parse } from "@/server/validation";
 
 const SEAL_ERRORS = { notOurs: "syncNotOurs", wrongKind: "syncWrongKind", wrongKey: "syncWrongKey", damaged: "syncDamaged" } as const;
 
+/** Called by the upload route before reading the (up to 200 MB) body. */
+export async function assertCanImportSync(): Promise<void> {
+  const actor = await requireUser();
+  await assertCan(actor, "sync.import");
+}
+
 export async function importSyncFile(input: { dryRun: unknown }, file: Blob | null): Promise<SyncImportSummary & { dryRun: boolean }> {
   const actor = await requireUser();
   const { dryRun } = parse(z.object({ dryRun: z.stringbool().default(true) }), input);

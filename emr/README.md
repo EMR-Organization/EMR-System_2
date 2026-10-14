@@ -1,6 +1,6 @@
 # Humanity First EMR
 
-This replaces the Streamlit app in `../Electric-Medical-Record-System-Offline/`. It's built on Next.js 16, PostgreSQL 16, Prisma and Better Auth. The design is in the **HF EMR Technical Spec** doc.
+This replaces the old Streamlit app (`Electric-Medical-Record-System-Offline/`, removed in Phase 9; it's still in the git history, and its data comes across with `import-legacy`). It's built on Next.js 16, PostgreSQL 16, Prisma and Better Auth. The design is in the **HF EMR Technical Spec** doc.
 
 ## Developer setup
 
@@ -54,6 +54,10 @@ docker run -d --name emr-dev-db -e POSTGRES_USER=emr_owner -e POSTGRES_PASSWORD=
 | `npm run audit:runtime` | After a build: fails if any high/critical advisory affects a package in the shipped server |
 
 CI runs lint, guards, typecheck, tests, build and the runtime audit on every pull request.
+
+## Running it in the field
+
+The operations docs (before the trip, device setup, admin guide, field drill, security notes) are in [`docs/`](docs/README.md).
 
 ## Windows field bundle
 

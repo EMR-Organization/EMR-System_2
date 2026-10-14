@@ -21,6 +21,6 @@ export async function patientForAccess(
     select: { id: true, tripId: true },
   });
   if (!patient) throw new NotFoundError();
-  await assertCan(actor, permission, { tripId: patient.tripId });
+  await assertCan(actor, permission, { tripId: patient.tripId, client });
   return patient;
 }
