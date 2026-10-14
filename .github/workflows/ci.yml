@@ -159,6 +159,7 @@ jobs:
           retention-days: 30
 
       - name: Hub - setup
+        timeout-minutes: 10
         shell: pwsh
         run: |
           robocopy dist\EMR C:\EMR /E /NFL /NDL /NJH /NJS /NP | Out-Null
@@ -172,6 +173,7 @@ jobs:
           if (-not (Test-Path C:\EMR\data\caddy\ca\intermediate.key)) { throw 'no HTTPS certificate authority' }
 
       - name: Hub - start and check what the network can reach
+        timeout-minutes: 10
         shell: pwsh
         run: |
           . C:\EMR\scripts\common.ps1
@@ -213,6 +215,7 @@ jobs:
           foreach ($port in @(443, 3000, 5433)) { if (Test-Port '127.0.0.1' $port) { throw "port $port still open after stop" } }
 
       - name: Fallback - setup from the hub's file, run standalone, export a bundle
+        timeout-minutes: 15
         shell: pwsh
         run: |
           . C:\EMR\scripts\common.ps1

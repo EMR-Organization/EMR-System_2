@@ -104,9 +104,18 @@ function Invoke-Tool([string]$Name, [string[]]$ToolArgs = @()) {
 
 # ---------------- PostgreSQL ----------------
 
+# pg_ctl start leaves the database server running in the background, and that
+# server inherits pg_ctl's output handles. If PowerShell captured pg_ctl's output
+# (a pipe), it would wait forever for the server to close it. So pg_ctl runs as a
+# plain process with nothing captured, and we wait for pg_ctl alone.
 function Invoke-PgCtl([string[]]$PgArgs) {
-    & (Join-Path $P.PgBin 'pg_ctl.exe') @PgArgs
-    return $LASTEXITCODE
+    $psi = New-Object Diagnostics.ProcessStartInfo
+    $psi.FileName = Join-Path $P.PgBin 'pg_ctl.exe'
+    $psi.Arguments = ($PgArgs | ForEach-Object { if ($_ -match '\s') { "`"$_`"" } else { $_ } }) -join ' '
+    $psi.UseShellExecute = $false
+    $proc = [Diagnostics.Process]::Start($psi)
+    $proc.WaitForExit()
+    return $proc.ExitCode
 }
 
 function Test-PgRunning {
