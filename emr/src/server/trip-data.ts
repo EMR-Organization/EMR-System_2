@@ -1,4 +1,5 @@
 import "server-only";
+import { omit } from "@/lib/shared/omit";
 import { formatPatientLabel } from "@/lib/shared/patient-label";
 import { TRIP_DATA_FORMAT, TRIP_DATA_VERSION, type TripData, type TripDataPatient } from "@/lib/shared/schemas/trip-data";
 import { audit, type AuditSubject } from "@/server/audit";
@@ -12,13 +13,6 @@ import { allocatePatientNumber } from "@/server/patient-number";
 // Import is MERGE ONLY and idempotent: a record whose ID is already here is
 // left exactly as it is, so importing the same file twice changes nothing, and
 // nothing that's already in the database is ever overwritten or deleted.
-
-/** A copy without the given keys. */
-function omit<T extends object, K extends keyof T>(obj: T, ...keys: K[]): Omit<T, K> {
-  const copy = { ...obj };
-  for (const k of keys) delete copy[k];
-  return copy;
-}
 
 const isoDay = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
 const asDay = (s: string | null) => (s ? new Date(`${s}T00:00:00Z`) : null);

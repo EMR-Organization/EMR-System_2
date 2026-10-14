@@ -8,6 +8,7 @@ const base = {
   ALLOWED_EMAIL_DOMAINS: "example.org",
   NODE_ID: "hub",
   BACKUP_KEY: randomBytes(32).toString("base64url"),
+  SYNC_KEY: randomBytes(32).toString("base64url"),
 };
 
 afterEach(() => vi.unstubAllEnvs());

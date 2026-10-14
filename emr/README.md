@@ -46,6 +46,9 @@ docker run -d --name emr-dev-db -e POSTGRES_USER=emr_owner -e POSTGRES_PASSWORD=
 | `npm run backup` | Encrypted backup (database + photos) to `BACKUP_DIR`, keeps 14 days. Needs `pg_dump` 16 on `PATH` or in `PG_BIN_DIR` |
 | `npm run restore -- <file.hfbak>` | Restores into a **new** database and verifies it; nothing live changes. Add `--swap` (app stopped) to put it in place; the old database and photos are kept aside |
 | `npm run import-legacy -- <emr_data> [--root-trip MM_YYYY] [--dry-run]` | Imports the old Streamlit app's data folder. Safe to re-run (skips what's already imported) |
+| `npm run provision-node` | **Hub**, before the trip: encrypted file of accounts (password hashes), trips and memberships for fallback laptops |
+| `npm run load-provision -- <file> [--first-number 5001]` | **Fallback**: loads it, so the same logins work. Each fallback needs its own `NODE_ID`, the hub's `SYNC_KEY`, and its own first number (5001, 6001…) |
+| `npm run export-bundle -- [--since <time>]` | **Fallback**, when the hub is back: everything recorded there (with photos and audit entries) for Admin → Sync on the hub |
 | `npm run start:standalone` | Runs the built standalone server, as the field bundle does (e2e tests use it) |
 | `npm run build` | Production build (`output: "standalone"`, used by the Windows bundle) |
 | `npm run audit:runtime` | After a build: fails if any high/critical advisory affects a package in the shipped server |
