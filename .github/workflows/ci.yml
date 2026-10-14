@@ -190,7 +190,7 @@ jobs:
           curl.exe --fail -sS -o NUL --cacert $ca --resolve "${name}:443:127.0.0.1" "https://$name/login"
           if ($LASTEXITCODE) { throw "HTTPS failed for $name" }
           # The certificate devices install is served before sign-in and is Caddy's root.
-          curl.exe --fail -sS -o $env:RUNNER_TEMP\served.crt --cacert $ca https://localhost/setup/root.crt
+          curl.exe --fail -sS -o $env:RUNNER_TEMP\served.crt --cacert $ca https://localhost/setup/certificate
           $served = New-Object Security.Cryptography.X509Certificates.X509Certificate2 "$env:RUNNER_TEMP\served.crt"
           $root = New-Object Security.Cryptography.X509Certificates.X509Certificate2 $ca
           if ($served.Thumbprint -ne $root.Thumbprint) { throw 'served certificate is not the root' }

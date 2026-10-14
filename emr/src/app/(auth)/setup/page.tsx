@@ -51,7 +51,7 @@ async function Certificate() {
   if (!cert) return <p className="text-muted-foreground">{t("notAvailable")}</p>;
   return (
     <div className="grid gap-2">
-      <a className={buttonVariants()} href="/setup/root.crt" download>
+      <a className={buttonVariants()} href="/setup/certificate" download>
         {t("download")}
       </a>
       <p className="text-xs text-muted-foreground">
