@@ -1,4 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { config } from "dotenv";
 
 // e2e tests sign in and change data, so they run against their own seeded
@@ -26,6 +28,7 @@ export default defineConfig({
       BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET ?? "",
       AUDIT_KEY: process.env.AUDIT_KEY ?? "",
       TRUST_PROXY: process.env.TRUST_PROXY ?? "0",
+      PHOTOS_DIR: path.join(tmpdir(), "emr-e2e-photos"),
       ALLOWED_EMAIL_DOMAINS: process.env.ALLOWED_EMAIL_DOMAINS ?? "",
       NODE_ID: process.env.NODE_ID ?? "e2e",
     },

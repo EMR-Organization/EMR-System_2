@@ -1,6 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import type { Specialty } from "@/generated/prisma/client";
+import { formatPatientLabel } from "@/lib/shared/patient-label";
 import { requireUser } from "@/server/auth/session";
 import { db } from "@/server/db";
 import { assertCan } from "@/server/rbac";
@@ -66,4 +67,63 @@ export async function tripStats(tripId: unknown): Promise<TripStats> {
     bySpecialty,
     waterRisk: { LOW: riskCount("LOW"), MEDIUM: riskCount("MEDIUM"), HIGH: riskCount("HIGH"), unknown: riskCount(null) },
   };
+}
+
+export type QueueItem = {
+  id: string;
+  displayNumber: number;
+  label: string;
+  firstName: string;
+  lastName: string;
+  gender: "MALE" | "FEMALE" | "OTHER";
+  dateOfBirth: Date | null;
+  ageValue: number | null;
+  ageUnit: "YEARS" | "MONTHS" | null;
+  hasDiagnosis: boolean;
+  activeMedications: number;
+};
+
+/**
+ * "My Patients" (render_doctor_patient_list in the old app): this trip's
+ * patients sent to the doctor's specialty, not-yet-seen first. Specialty only
+ * sorts the work; any doctor can still open any patient. Admins pick a
+ * specialty to look at.
+ */
+export async function doctorQueue(input: unknown): Promise<{ specialty: Specialty | null; patients: QueueItem[] }> {
+  const actor = await requireUser();
+  const { tripId, specialty: requested } = parse(
+    z.object({ tripId: z.uuid(), specialty: z.enum(["DENTIST", "PHYSICIAN", "PEDIATRICIAN"]).optional() }),
+    input,
+  );
+  await assertCan(actor, "visit.read", { tripId });
+  const specialty = actor.role === "DOCTOR" ? actor.specialty : (requested ?? null);
+  if (!specialty) return { specialty: null, patients: [] };
+
+  const rows = await db.patient.findMany({
+    where: { tripId, deletedAt: null, assignedSpecialty: specialty },
+    orderBy: { displayNumber: "asc" },
+    select: {
+      id: true,
+      displayNumber: true,
+      firstName: true,
+      lastName: true,
+      gender: true,
+      dateOfBirth: true,
+      ageValue: true,
+      ageUnit: true,
+      trip: { select: { code: true } },
+      visits: { where: { tripVisit: true }, select: { diagnosis: true } },
+      _count: { select: { medications: { where: { status: "ACTIVE" } } } },
+    },
+  });
+  const patients = rows.map(({ trip, visits, _count, ...p }) => ({
+    ...p,
+    label: formatPatientLabel(p.displayNumber, trip.code),
+    hasDiagnosis: Boolean(visits[0]?.diagnosis),
+    activeMedications: _count.medications,
+  }));
+  // Waiting patients first (patient_seen_by_doctor), each group in arrival order.
+  const seen = (q: QueueItem) => q.hasDiagnosis || q.activeMedications > 0;
+  patients.sort((a, b) => Number(seen(a)) - Number(seen(b)) || a.displayNumber - b.displayNumber);
+  return { specialty, patients };
 }

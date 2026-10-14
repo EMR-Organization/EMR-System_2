@@ -62,10 +62,11 @@ type FieldProps = ComponentProps<typeof Input> & {
 };
 
 /** A labelled input that shows the server's errors for its name. */
-export function Field({ name, label, hint, state, ...inputProps }: FieldProps) {
+export function Field({ name, label, hint, state, id: idProp, ...inputProps }: FieldProps) {
   const errorText = useErrorText();
   const errors = state && !state.ok ? (state.fieldErrors?.[name] ?? []) : [];
-  const id = `field-${name}`;
+  // A custom id is needed when the same field appears more than once on a page.
+  const id = idProp ?? `field-${name}`;
   const describedBy = [hint ? `${id}-hint` : null, errors.length ? `${id}-error` : null].filter(Boolean).join(" ") || undefined;
   return (
     <div className="grid gap-1.5">

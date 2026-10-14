@@ -35,6 +35,8 @@ const schema = z.object({
   NODE_ID: z
     .string()
     .regex(/^[A-Za-z0-9_-]{1,32}$/, "NODE_ID may contain letters, digits, - and _ (max 32)"),
+  /** Where photo files are stored. Relative paths are resolved from the working directory. */
+  PHOTOS_DIR: z.string().min(1).default("data/photos"),
   /**
    * "1" only when the app is reachable solely through Caddy (the field setup binds
    * it to 127.0.0.1). Then X-Forwarded-For is the real client IP. Otherwise the

@@ -1,4 +1,6 @@
-import { test as base, type Browser, type BrowserContext } from "@playwright/test";
+import { expect, test as base, type Browser, type BrowserContext } from "@playwright/test";
+
+export { expect };
 
 // Each browser context gets its own client IP (the e2e server runs with
 // TRUST_PROXY=1, as behind Caddy), like separate phones on the clinic network.
@@ -21,4 +23,9 @@ export const test = base.extend({
   },
 });
 
-export { expect } from "@playwright/test";
+
+/** Fails if the page scrolls sideways (content wider than the screen), which breaks phones. */
+export async function expectNoHorizontalScroll(page: import("@playwright/test").Page) {
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow, "page is wider than the screen").toBeLessThanOrEqual(0);
+}

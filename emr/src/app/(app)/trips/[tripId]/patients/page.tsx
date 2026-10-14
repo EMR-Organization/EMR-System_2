@@ -6,6 +6,7 @@ import { AutoRefresh } from "@/components/auto-refresh";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { localDay } from "@/lib/shared/dates";
 import { orSignIn } from "@/server/page";
 import { listPatients } from "@/server/services/patients";
 import { myPermissions } from "@/server/services/users";
@@ -33,7 +34,7 @@ async function PatientList({ params, searchParams }: Props) {
 
   const [result, permissions] = await orSignIn(() => Promise.all([listPatients({ tripId, ...filter }), myPermissions({ tripId })]));
   const pages = Math.max(1, Math.ceil(result.total / result.pageSize));
-  const today = new Date().toISOString();
+  const today = localDay();
   const pageHref = (page: number) =>
     `?${new URLSearchParams(Object.entries({ ...filter, page: String(page) }).filter((e): e is [string, string] => !!e[1]))}`;
 

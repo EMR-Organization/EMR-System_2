@@ -8,7 +8,7 @@ import { myPermissions } from "@/server/services/users";
 
 export default function TripLayout({ children, params }: LayoutProps<"/trips/[tripId]">) {
   return (
-    <div className="mx-auto grid w-full max-w-4xl gap-6 px-4 py-6 md:py-8">
+    <div className="mx-auto grid w-full grid-cols-[minmax(0,1fr)] max-w-4xl gap-6 px-4 py-6 md:py-8">
       <Suspense fallback={<div className="h-16" />}>
         <TripHeader params={params} />
       </Suspense>
@@ -27,10 +27,11 @@ async function TripHeader({ params }: Pick<LayoutProps<"/trips/[tripId]">, "para
     { href: `/trips/${trip.id}`, label: t("overview") },
     { href: `/trips/${trip.id}/patients`, label: t("patientsTab") },
   ];
+  if (permissions.includes("visit.read")) tabs.push({ href: `/trips/${trip.id}/queue`, label: t("queueTab") });
   if (permissions.includes("trip.members.toggle")) tabs.push({ href: `/trips/${trip.id}/members`, label: t("members") });
 
   return (
-    <header className="grid gap-3">
+    <header className="grid grid-cols-[minmax(0,1fr)] gap-3">
       <div>
         <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight">
           {trip.name}

@@ -10,7 +10,7 @@ export default async function AdminUsersPage() {
   const t = await getTranslations("AdminUsers");
   const c = await getTranslations("Common");
   return (
-    <main className="mx-auto grid w-full max-w-5xl gap-6 px-4 py-6 md:py-8">
+    <main className="mx-auto grid w-full grid-cols-[minmax(0,1fr)] max-w-5xl gap-6 px-4 py-6 md:py-8">
       <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
       <Suspense fallback={<p className="text-muted-foreground">{c("loading")}</p>}>
         <Users />
