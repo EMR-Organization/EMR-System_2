@@ -21,6 +21,8 @@ FALLBACK (a spare laptop, used only if the hub fails)
     setup.bat -Role fallback -SyncKeyFile E:\sync-key.txt -ProvisionFile E:\provision.hfprov -FirstNumber 5001
   (6001 for a second fallback, and so on.) Delete provision.hfprov afterwards: it
   holds password hashes. Re-provision after approving new accounts on the hub.
+  Admin accounts are not copied to fallbacks (on purpose); admin tasks wait
+  for the hub.
   If the hub fails: start-standalone.bat (this laptop only).
   When the hub is back: emr-tool.bat export-bundle on the fallback, then on the
   hub Admin > Sync > import the .hfsync file.

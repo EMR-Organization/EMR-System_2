@@ -630,7 +630,7 @@
     "howTitle": "How fallback laptops work",
     "howProvision": "Before the trip, on the hub, then on each fallback:",
     "howExport": "When the hub is back, on the fallback:",
-    "howNotes": "Each fallback needs its own NODE_ID and the hub’s SYNC_KEY. Fallbacks start with accounts and trips only, not existing patients; accounts changed on a fallback aren’t copied back.",
+    "howNotes": "Each fallback needs its own NODE_ID and the hub’s SYNC_KEY. Fallbacks start with doctor and student accounts and trips only (no admin accounts, and no existing patients); accounts changed on a fallback aren’t copied back.",
     "entity": {
       "Patient": "Patient details",
       "Visit": "Visit",

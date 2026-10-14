@@ -25,7 +25,7 @@ One Windows laptop (the hub) runs the database, the app and an HTTPS server (Cad
 ## Accepted risks (decide consciously)
 
 - **Email addresses aren't verified.** Anyone on the network can register with any address in the doctors' domain. Admins must approve accounts only after checking the person face to face ([admin guide](admin-guide.md#approving-accounts)).
-- **Fallback laptops carry every account's password hash**, admins included, and the sync key. A stolen fallback allows offline password guessing (slow, because of argon2id) and forging sync bundles. Mitigations: BitLocker, strong passwords, and treating a lost fallback as an incident (change passwords; don't import bundles from it).
+- **Fallback laptops carry the doctors' and students' password hashes** and the sync key (admin accounts are deliberately left off fallbacks). A stolen fallback allows offline password guessing for those accounts (slow, because of argon2id) and forging sync bundles. Mitigations: BitLocker, strong passwords, and treating a lost fallback as an incident (change passwords; don't import bundles from it).
 - **Anyone who holds the hub laptop unlocked and signed in to Windows** can read everything. Lock the screen (Windows + L) whenever leaving the hub.
 - **Devices are shared and unmanaged.** A phone left signed in is signed out after 30 idle minutes, not sooner.
 - **No internet means no security updates during the trip.** Update everything before leaving and keep the hub off any other network.

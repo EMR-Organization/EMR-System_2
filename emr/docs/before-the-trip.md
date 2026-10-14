@@ -48,7 +48,9 @@ On the hub, with the EMR running: `emr-tool.bat provision-node`. It writes `C:\E
 setup.bat -Role fallback -SyncKeyFile E:\sync-key.txt -ProvisionFile E:\provision.hfprov -FirstNumber 5001
 ```
 
-Use 6001 for a second fallback, and so on: patients registered on a fallback get numbers from there, so they never clash with the hub's. **Delete `provision.hfprov` from the USB stick and the hub afterwards**: it holds every account's password hash. Re-provision after approving new accounts.
+Use 6001 for a second fallback, and so on: patients registered on a fallback get numbers from there, so they never clash with the hub's. **Delete `provision.hfprov` from the USB stick and the hub afterwards**: it holds the doctors' and students' password hashes. Re-provision after approving new accounts.
+
+Admin accounts are left off fallbacks on purpose, so a stolen fallback can't be used to attack admin passwords. On a fallback, doctors and students work normally; admin-only tasks (deleting a patient, approving accounts, backups from the screen) wait until the hub is back.
 
 ## 7. Old records
 
