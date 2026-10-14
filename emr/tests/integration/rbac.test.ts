@@ -74,7 +74,7 @@ describe("permission matrix", async () => {
     expect(studentTrip).toEqual(
       ["condition.write", "diabetic.write", "patient.read", "patient.register", "photo.write", "search.crossTrip", "vitals.write"].sort(),
     );
-    expect(adminOnly).toEqual(["audit.read", "data.import", "patient.delete", "sync.import", "trip.create", "user.manage"].sort());
+    expect(adminOnly).toEqual(["audit.read", "backup.run", "data.import", "patient.delete", "sync.import", "trip.create", "user.manage"].sort());
     expect(doctorAll).toHaveLength(PERMISSIONS.length - adminOnly.length);
     expect(PERMISSIONS.every((p) => MATRIX[p].ADMIN === "all")).toBe(true);
     expect(PERMISSIONS.every((p) => MATRIX[p].STUDENT !== "all")).toBe(true);

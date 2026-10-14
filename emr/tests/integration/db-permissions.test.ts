@@ -66,8 +66,13 @@ describe("emr_app role", () => {
     await expect(app.query(`DELETE FROM "Trip" WHERE id = $1`, [tripId])).rejects.toThrow(/permission denied/);
   });
 
-  it("cannot read or change migration history", async () => {
-    await expect(app.query(`SELECT * FROM "_prisma_migrations"`)).rejects.toThrow(/permission denied/);
+  it("can read migration history (backups dump it) but not change it", async () => {
+    await expect(app.query(`SELECT count(*) FROM "_prisma_migrations"`)).resolves.toBeTruthy();
+    await expect(app.query(`DELETE FROM "_prisma_migrations"`)).rejects.toThrow(/permission denied/);
+    await expect(app.query(`UPDATE "_prisma_migrations" SET checksum = 'x'`)).rejects.toThrow(/permission denied/);
+    await expect(app.query(`INSERT INTO "_prisma_migrations" (id, checksum, migration_name, started_at) VALUES ('x', 'x', 'x', now())`)).rejects.toThrow(
+      /permission denied/,
+    );
   });
 
   it("cannot change the schema or create roles", async () => {

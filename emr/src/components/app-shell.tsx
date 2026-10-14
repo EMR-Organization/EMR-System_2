@@ -40,7 +40,10 @@ async function UserNav() {
   const user = await orSignIn(() => me());
 
   const items: NavItem[] = [{ href: "/trips", label: t("trips") }];
+  if (roleHas(user.role, "search.crossTrip")) items.push({ href: "/search", label: t("search") });
   if (roleHas(user.role, "user.manage")) items.push({ href: "/admin/users", label: t("users") });
+  if (roleHas(user.role, "audit.read")) items.push({ href: "/admin/audit", label: t("audit") });
+  if (roleHas(user.role, "backup.run")) items.push({ href: "/admin/backups", label: t("backups") });
   items.push({ href: "/account", label: t("account") });
 
   return (

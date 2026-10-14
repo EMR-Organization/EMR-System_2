@@ -1,7 +1,7 @@
 import "server-only";
 import { createHmac } from "node:crypto";
 import type { Actor } from "@/server/auth/session";
-import { db, type Tx } from "@/server/db";
+import { db, type Db, type Tx } from "@/server/db";
 import { env } from "@/server/env";
 
 // Append-only, hash-chained audit log (spec: "Audit log").
@@ -142,10 +142,12 @@ export function checkEntries(entries: StoredEntry[], prevHash = GENESIS_HASH, ke
  * doesn't match. With a checkpoint, also fails if the entry it names is
  * missing or has a different hash (which catches a whole-chain rewrite).
  */
-export async function verifyChain(options: { checkpoint?: Pick<Checkpoint, "id" | "hash">; batchSize?: number } = {}): Promise<ChainResult> {
-  const { checkpoint, batchSize = 1000 } = options;
+export async function verifyChain(
+  options: { checkpoint?: Pick<Checkpoint, "id" | "hash">; batchSize?: number; client?: Pick<Db, "auditLog"> } = {},
+): Promise<ChainResult> {
+  const { checkpoint, batchSize = 1000, client = db } = options;
   if (checkpoint) {
-    const row = await db.auditLog.findUnique({ where: { id: BigInt(checkpoint.id) }, select: { hash: true } });
+    const row = await client.auditLog.findUnique({ where: { id: BigInt(checkpoint.id) }, select: { hash: true } });
     if (row?.hash !== checkpoint.hash) return { ok: false, checked: 0, brokenAtId: checkpoint.id, reason: "checkpoint" };
   }
 
@@ -154,7 +156,7 @@ export async function verifyChain(options: { checkpoint?: Pick<Checkpoint, "id" 
   let checked = 0;
 
   for (;;) {
-    const rows = await db.auditLog.findMany({
+    const rows = await client.auditLog.findMany({
       where: cursor === undefined ? undefined : { id: { gt: cursor } },
       orderBy: { id: "asc" },
       take: batchSize,

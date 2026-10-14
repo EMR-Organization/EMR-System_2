@@ -33,6 +33,7 @@ jobs:
       DATABASE_OWNER_URL: postgresql://emr_owner:emr_ci_password@localhost:5432/emr
       BETTER_AUTH_SECRET: ci-only-secret-not-for-real-use-0123456789
       AUDIT_KEY: ci-only-audit-key-not-for-real-use-0123456789
+      BACKUP_KEY: ci-only-backup-key-not-for-real-use-0123456789
       TRUST_PROXY: "1"
       ALLOWED_EMAIL_DOMAINS: example.org
       NODE_ID: ci
@@ -43,6 +44,12 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: emr/package-lock.json
+      # Backups run pg_dump/pg_restore, which must match the server's major version (16).
+      - name: PostgreSQL 16 client tools
+        working-directory: .
+        run: |
+          sudo apt-get install -y -q postgresql-client-16 || (sudo apt-get update -q && sudo apt-get install -y -q postgresql-client-16)
+          echo "PG_BIN_DIR=/usr/lib/postgresql/16/bin" >> "$GITHUB_ENV"
       - run: npm ci
       - run: npm run lint
       - run: npm run guards
@@ -90,6 +97,13 @@ jobs:
         run: |
           echo "BETTER_AUTH_SECRET=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
           echo "AUDIT_KEY=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
+          echo "BACKUP_KEY=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
+      # Backups run pg_dump/pg_restore, which must match the server's major version (16).
+      - name: PostgreSQL 16 client tools
+        working-directory: .
+        run: |
+          sudo apt-get install -y -q postgresql-client-16 || (sudo apt-get update -q && sudo apt-get install -y -q postgresql-client-16)
+          echo "PG_BIN_DIR=/usr/lib/postgresql/16/bin" >> "$GITHUB_ENV"
       - run: npm ci
       - run: npx prisma migrate deploy
       - run: npm run db:app-role

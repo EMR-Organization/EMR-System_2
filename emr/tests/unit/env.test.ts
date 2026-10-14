@@ -7,6 +7,7 @@ const base = {
   DATABASE_URL: "postgresql://emr_app:x@127.0.0.1:5432/emr",
   ALLOWED_EMAIL_DOMAINS: "example.org",
   NODE_ID: "hub",
+  BACKUP_KEY: randomBytes(32).toString("base64url"),
 };
 
 afterEach(() => vi.unstubAllEnvs());
@@ -30,6 +31,7 @@ describe("parseEnv secrets", () => {
     ]) {
       expect(() => parseEnv({ ...base, BETTER_AUTH_SECRET: placeholder, AUDIT_KEY: random() }), placeholder).toThrow(/placeholder/);
       expect(() => parseEnv({ ...base, BETTER_AUTH_SECRET: random(), AUDIT_KEY: placeholder }), placeholder).toThrow(/placeholder/);
+      expect(() => parseEnv({ ...base, BETTER_AUTH_SECRET: random(), AUDIT_KEY: random(), BACKUP_KEY: placeholder }), placeholder).toThrow(/placeholder/);
     }
   });
 
@@ -38,8 +40,9 @@ describe("parseEnv secrets", () => {
     expect(parseEnv({ ...base, BETTER_AUTH_SECRET: random(), AUDIT_KEY: random(), TRUST_PROXY: "1" })).toMatchObject({ TRUST_PROXY: true });
   });
 
-  it("requires both secrets and defaults TRUST_PROXY off", () => {
+  it("requires every secret and defaults TRUST_PROXY off", () => {
     expect(() => parseEnv({ ...base, BETTER_AUTH_SECRET: random() })).toThrow(/AUDIT_KEY/);
+    expect(() => parseEnv({ ...base, BACKUP_KEY: undefined, BETTER_AUTH_SECRET: random(), AUDIT_KEY: random() })).toThrow(/BACKUP_KEY/);
     expect(parseEnv({ ...base, BETTER_AUTH_SECRET: random(), AUDIT_KEY: random() }).TRUST_PROXY).toBe(false);
   });
 });

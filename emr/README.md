@@ -43,6 +43,9 @@ docker run -d --name emr-dev-db -e POSTGRES_USER=emr_owner -e POSTGRES_PASSWORD=
 | `npm run create-admin` | Creates an admin account (the only way one is created) |
 | `npm run db:reset` | Drop everything, re-migrate, re-enable the app role, re-seed |
 | `npm run audit:checkpoint` | Verifies the audit log and prints a checkpoint to keep outside the database (`-- <id> <hash>` checks against an earlier one) |
+| `npm run backup` | Encrypted backup (database + photos) to `BACKUP_DIR`, keeps 14 days. Needs `pg_dump` 16 on `PATH` or in `PG_BIN_DIR` |
+| `npm run restore -- <file.hfbak>` | Restores into a **new** database and verifies it; nothing live changes. Add `--swap` (app stopped) to put it in place; the old database and photos are kept aside |
+| `npm run import-legacy -- <emr_data> [--root-trip MM_YYYY] [--dry-run]` | Imports the old Streamlit app's data folder. Safe to re-run (skips what's already imported) |
 | `npm run start:standalone` | Runs the built standalone server, as the field bundle does (e2e tests use it) |
 | `npm run build` | Production build (`output: "standalone"`, used by the Windows bundle) |
 | `npm run audit:runtime` | After a build: fails if any high/critical advisory affects a package in the shipped server |

@@ -38,6 +38,15 @@ const schema = z.object({
   /** Where photo files are stored. Relative paths are resolved from the working directory. */
   PHOTOS_DIR: z.string().min(1).default("data/photos"),
   /**
+   * Encrypts backups. Keep a copy OFF the hub (with AUDIT_KEY): if the hub is
+   * lost, its backups can't be restored without it.
+   */
+  BACKUP_KEY: secret("BACKUP_KEY"),
+  /** Where encrypted backups are written (kept 14 days). */
+  BACKUP_DIR: z.string().min(1).default("data/backups"),
+  /** Folder holding pg_dump / pg_restore when they aren't on PATH (the Windows bundle's PostgreSQL bin). */
+  PG_BIN_DIR: z.string().optional(),
+  /**
    * "1" only when the app is reachable solely through Caddy (the field setup binds
    * it to 127.0.0.1). Then X-Forwarded-For is the real client IP. Otherwise the
    * header is ignored, because anyone could set it.

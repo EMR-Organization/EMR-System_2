@@ -22,6 +22,7 @@ export const PERMISSIONS = [
   "sync.import",
   "patient.delete",
   "audit.read",
+  "backup.run",
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -53,6 +54,7 @@ export const MATRIX: Record<Permission, Record<RoleName, Grant>> = {
   "sync.import": { STUDENT: "none", DOCTOR: "none", ADMIN: "all" },
   "patient.delete": { STUDENT: "none", DOCTOR: "none", ADMIN: "all" },
   "audit.read": { STUDENT: "none", DOCTOR: "none", ADMIN: "all" },
+  "backup.run": { STUDENT: "none", DOCTOR: "none", ADMIN: "all" },
 };
 
 /**

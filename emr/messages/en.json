@@ -85,7 +85,12 @@
     "photoUnreadable": "That image couldn't be read. Try another photo.",
     "photoTooLarge": "Photos must be 5 MB or smaller.",
     "medicationConflict": "This medication was already changed. Reload and try again.",
-    "pastDate": "That date is in the past."
+    "pastDate": "That date is in the past.",
+    "searchTooShort": "Type at least 2 characters.",
+    "importTooLarge": "Import files must be 25 MB or smaller.",
+    "importNotJson": "That file isn't a JSON export from this EMR.",
+    "importInvalid": "That file isn't a valid trip export (or it was changed by hand). Nothing was imported.",
+    "importWrongTrip": "That file is for a different trip. Open the trip whose code matches the file, or create it first."
   },
   "Login": {
     "title": "Sign in",
@@ -142,7 +147,10 @@
     "users": "Users",
     "account": "Account",
     "signedInAs": "{name} · {role}",
-    "menu": "Menu"
+    "menu": "Menu",
+    "search": "Search",
+    "audit": "Audit",
+    "backups": "Backups"
   },
   "Specialties": {
     "DENTIST": "Dentist",
@@ -195,7 +203,8 @@
     "riskUnknown": "Not assessed",
     "bySpecialty": "By specialty",
     "closedNotice": "This trip is marked as past. Its records are read-only; only admins can change them.",
-    "queueTab": "My patients"
+    "queueTab": "My patients",
+    "dataTab": "Data"
   },
   "Members": {
     "title": "Students on this trip",
@@ -482,5 +491,89 @@
     "seen": "Seen",
     "meds": "{count, plural, one {# medication} other {# medications}}",
     "diagnosed": "Diagnosis recorded"
+  },
+  "Search": {
+    "title": "Search all trips",
+    "intro": "Find a returning patient from this or an earlier trip.",
+    "label": "Search patients",
+    "placeholder": "Name, patient number, phone or date of birth",
+    "button": "Search",
+    "hint": "Search by name, patient number (12 or 012_05_2026), phone, or date of birth (07/05/1990).",
+    "tooShort": "Type at least 2 characters.",
+    "none": "No patients match that search.",
+    "count": "{count, plural, one {# patient} other {# patients}}",
+    "truncated": "Showing the first {count}. Add more of the name to narrow it down."
+  },
+  "Backups": {
+    "title": "Backups",
+    "intro": "Encrypted copies of every record and photo. One is made every night; make one now before anything risky.",
+    "now": "Back up now",
+    "running": "Backing up…",
+    "done": "Backup saved.",
+    "listTitle": "Saved backups (kept 14 days)",
+    "none": "No backups yet.",
+    "latest": "Latest",
+    "details": "{patients, plural, one {# patient} other {# patients}} · {photos, plural, one {# photo} other {# photos}} · {size} MB",
+    "checkpoint": "audit checkpoint #{id}",
+    "download": "Download",
+    "keepSafeTitle": "Keeping backups safe",
+    "keepSafeUsb": "At the end of each clinic day, copy the newest backup (the .hfbak and .json files in the backups folder, or use Download) to a USB stick that leaves with someone other than the hub.",
+    "keepSafeKeys": "A backup can only be opened with the BACKUP_KEY and AUDIT_KEY from setup. Keep a copy of both away from the hub, or a lost hub means lost backups.",
+    "restoreHow": "Restoring is done on the hub, from a terminal:"
+  },
+  "Audit": {
+    "title": "Audit log",
+    "intro": "Every sign-in, record view, change, export and admin action, in order. Entries are chained so edits are detectable.",
+    "verifyTitle": "Verify the chain",
+    "verifyIntro": "Recomputes every entry. With a checkpoint from a backup or a printout, it also proves the log wasn’t rewritten since then.",
+    "fromBackup": "Checkpoint from a backup",
+    "noCheckpoint": "None (just check the chain)",
+    "backupCheckpoint": "Backup of {time} (entry #{id})",
+    "checkpointId": "Checkpoint entry #",
+    "checkpointHash": "Checkpoint hash",
+    "checkpointHint": "Leave both empty to check the chain on its own.",
+    "verify": "Verify chain",
+    "verifying": "Verifying…",
+    "chainOk": "The audit log is intact: {count, plural, one {# entry} other {# entries}} verified.",
+    "chainBroken": {
+      "hash": "Entry #{id} was changed after it was written. Entries before it ({count}) are intact.",
+      "link": "The chain breaks at entry #{id}: an entry before it was removed or changed. Entries before it ({count}) are intact.",
+      "checkpoint": "The log no longer matches the checkpoint at entry #{id}: it was rewritten or entries were removed since then."
+    },
+    "logTitle": "Entries",
+    "filters": "Filter entries",
+    "user": "User",
+    "anyone": "Anyone",
+    "patient": "Patient (number or ID)",
+    "action": "Action (or prefix, e.g. patient.)",
+    "from": "From",
+    "to": "To",
+    "apply": "Filter",
+    "clear": "Clear",
+    "none": "No entries match.",
+    "patientNotFound": "No patient has that number.",
+    "noUser": "No user (system or failed sign-in)",
+    "openPatient": "Open patient",
+    "older": "Older entries"
+  },
+  "Data": {
+    "exportTitle": "Export",
+    "exportIntro": "CSV opens in Excel (one row per patient). JSON holds every record and can be imported into another hub. Both contain patient data: keep them on encrypted drives and delete copies when done. Photos are not included.",
+    "csv": "Download CSV",
+    "json": "Download JSON",
+    "importTitle": "Import (merge)",
+    "importIntro": "Adds patients and records from a JSON export of this trip. Nothing already here is changed or deleted, and importing the same file twice adds nothing.",
+    "file": "JSON export file",
+    "fileHint": "Up to 25 MB.",
+    "check": "Check file",
+    "checking": "Working…",
+    "confirm": "Import",
+    "previewTitle": "This import would:",
+    "doneTitle": "Imported:",
+    "summaryPatients": "{added, plural, one {add # patient} other {add # patients}} ({here} already here)",
+    "summaryRecords": "{added, plural, one {add # record} other {add # records}} (vitals, visits, medications…; {here} already here)",
+    "summaryRenumbered": "{count, plural, one {# patient gets} other {# patients get}} a new number because theirs is taken (the old one is kept on the record):",
+    "summarySkipped": "{count, plural, one {# item is} other {# items are}} left out:",
+    "imported": "{count, plural, one {# patient} other {# patients}} imported."
   }
 }
