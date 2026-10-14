@@ -42,11 +42,11 @@ export default async function SyncPage({ searchParams }: Pick<PageProps<"/admin/
         </CardHeader>
         <CardContent className="grid gap-2 text-sm">
           <p>
-            {t("howProvision")} <code className="rounded bg-muted px-1 text-xs">npm run provision-node</code> →{" "}
-            <code className="rounded bg-muted px-1 text-xs">npm run load-provision -- provision.hfprov</code>
+            {t("howProvision")} <code className="rounded bg-muted px-1 text-xs">emr-tool.bat provision-node</code> →{" "}
+            <code className="rounded bg-muted px-1 text-xs">emr-tool.bat load-provision E:\provision.hfprov --first-number 5001</code>
           </p>
           <p>
-            {t("howExport")} <code className="rounded bg-muted px-1 text-xs">npm run export-bundle</code>
+            {t("howExport")} <code className="rounded bg-muted px-1 text-xs">emr-tool.bat export-bundle</code>
           </p>
           <p className="text-muted-foreground">{t("howNotes")}</p>
         </CardContent>

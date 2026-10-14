@@ -1,12 +1,14 @@
 import { IMPORT_MAX_BYTES } from "@/lib/shared/schemas/trip-data";
 import { toActionResult } from "@/server/errors";
 import { isSameOrigin } from "@/server/http";
-import { importTripFile } from "@/server/services/data";
+import { assertCanImportTrip, importTripFile } from "@/server/services/data";
 
 // Trip data import (admins; merge only). A route handler so that only this
 // endpoint accepts files this large; server actions keep the 1 MB limit.
 
 const MAX_REQUEST_BYTES = IMPORT_MAX_BYTES + 64 * 1024;
+
+const STATUS = { AUTH: 401, FORBIDDEN: 403, NOT_FOUND: 404, VALIDATION: 422, CONFLICT: 409, RATE_LIMIT: 429, INTERNAL: 500 } as const;
 
 export async function POST(request: Request, { params }: RouteContext<"/api/trips/[tripId]/import">) {
   if (!isSameOrigin(request)) return Response.json({ ok: false, code: "FORBIDDEN", messageKey: "forbidden" }, { status: 403 });
@@ -16,6 +18,10 @@ export async function POST(request: Request, { params }: RouteContext<"/api/trip
   }
 
   const { tripId } = await params;
+  // Who's asking is checked before the body is read: an unauthenticated device
+  // must not be able to make the hub buffer a large upload.
+  const allowed = await toActionResult(() => assertCanImportTrip(tripId));
+  if (!allowed.ok) return Response.json(allowed, { status: STATUS[allowed.code] });
   let form: FormData;
   try {
     form = await request.formData();
@@ -24,6 +30,6 @@ export async function POST(request: Request, { params }: RouteContext<"/api/trip
   }
   const file = form.get("file");
   const result = await toActionResult(() => importTripFile({ tripId, dryRun: form.get("dryRun") ?? "true" }, file instanceof Blob ? file : null));
-  const status = result.ok ? 200 : { AUTH: 401, FORBIDDEN: 403, NOT_FOUND: 404, VALIDATION: 422, CONFLICT: 409, RATE_LIMIT: 429, INTERNAL: 500 }[result.code];
+  const status = result.ok ? 200 : STATUS[result.code];
   return Response.json(result, { status });
 }

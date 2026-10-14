@@ -31,7 +31,7 @@ export default async function BackupsPage() {
           <p>{t("keepSafeUsb")}</p>
           <p>{t("keepSafeKeys")}</p>
           <p>
-            {t("restoreHow")} <code className="rounded bg-muted px-1 text-xs">npm run restore -- &lt;file&gt;</code>
+            {t("restoreHow")} <code className="rounded bg-muted px-1 text-xs">emr-tool.bat restore &lt;file.hfbak&gt;</code>
           </p>
         </CardContent>
       </Card>

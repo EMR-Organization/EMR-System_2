@@ -22,18 +22,18 @@ const interFile = file("intermediate.crt", ca.intermediatePem);
 const interKey = file("intermediate.key", ca.intermediateKeyPem);
 
 /** What a stolen intermediate key could sign: a server certificate for `san`. */
-function leafFor(san: string): string {
-  const name = san.replace(/[^a-z0-9]/gi, "_");
+function leafFor(san: string, usage = "serverAuth"): string {
+  const name = `${san}-${usage}`.replace(/[^a-z0-9]/gi, "_");
   const key = path.join(dir, `${name}.key`);
   const csr = path.join(dir, `${name}.csr`);
-  const ext = file(`${name}.ext`, `subjectAltName=${san}\nbasicConstraints=CA:FALSE\nextendedKeyUsage=serverAuth\n`);
+  const ext = file(`${name}.ext`, `subjectAltName=${san}\nbasicConstraints=CA:FALSE\nextendedKeyUsage=${usage}\n`);
   execFileSync("openssl", ["req", "-new", "-newkey", "ec", "-pkeyopt", "ec_paramgen_curve:P-256", "-nodes", "-keyout", key, "-out", csr, "-subj", "/"], { stdio: "ignore" });
   const out = path.join(dir, `${name}.crt`);
   execFileSync("openssl", ["x509", "-req", "-in", csr, "-CA", interFile, "-CAkey", interKey, "-CAcreateserial", "-out", out, "-days", "1", "-extfile", ext], { stdio: "ignore" });
   return out;
 }
-const verifies = (leaf: string) =>
-  spawnSync("openssl", ["verify", "-CAfile", rootFile, "-untrusted", interFile, "-purpose", "sslserver", leaf], { encoding: "utf8" });
+const verifies = (leaf: string, purpose = "sslserver") =>
+  spawnSync("openssl", ["verify", "-CAfile", rootFile, "-untrusted", interFile, "-purpose", purpose, leaf], { encoding: "utf8" });
 
 describe("hub certificate authority", () => {
   it("is a root and a name-constrained intermediate it signed; the root's key is never returned", () => {
@@ -61,6 +61,19 @@ describe("hub certificate authority", () => {
       const r = verifies(leafFor(san));
       expect(r.status, san).not.toBe(0);
       expect(r.stdout + r.stderr).toMatch(/permitted subtree violation|name constraint/i);
+    }
+  });
+
+  it("vouches only for TLS: no code signing or email certificates", () => {
+    for (const [usage, purpose] of [
+      ["codeSigning", "codesign"],
+      ["emailProtection", "smimesign"],
+    ]) {
+      const r = verifies(leafFor("DNS:emr-hub.local", usage), purpose);
+      expect(r.status, `${usage}: ${r.stdout}${r.stderr}`).not.toBe(0);
+    }
+    for (const cert of [rootFile, interFile]) {
+      expect(execFileSync("openssl", ["x509", "-in", cert, "-noout", "-ext", "extendedKeyUsage"], { encoding: "utf8" })).toMatch(/TLS Web Server Authentication, TLS Web Client Authentication\s*$/);
     }
   });
 });

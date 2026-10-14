@@ -11,11 +11,37 @@ export function uniqueIp() {
   return `10.${(process.pid >> 8) & 255}.${(counter >> 8) & 255}.${counter & 255}`;
 }
 
-export function newDevice(browser: Browser): Promise<BrowserContext> {
-  return browser.newContext({ extraHTTPHeaders: { "x-forwarded-for": uniqueIp() } });
+// Anything the browser blocked under the Content-Security-Policy
+// (src/lib/shared/csp.ts), from any device a test opened.
+const cspViolations: string[] = [];
+
+export async function newDevice(browser: Browser): Promise<BrowserContext> {
+  const context = await browser.newContext({ extraHTTPHeaders: { "x-forwarded-for": uniqueIp() } });
+  context.on("console", (msg) => {
+    if (/Content Security Policy/i.test(msg.text())) cspViolations.push(`${msg.location().url}: ${msg.text()}`);
+  });
+  return context;
 }
 
-export const test = base.extend({
+/** Returns (and clears) what the CSP blocked so far, for tests that expect a block. */
+export function takeCspViolations(): string[] {
+  return cspViolations.splice(0);
+}
+
+/**
+ * Every test also fails if the browser blocked anything under the CSP: a
+ * blocked Next script means a page that silently doesn't work, so a CSP
+ * mistake surfaces in whichever test hits it first.
+ */
+export const test = base.extend<{ cspCheck: void }>({
+  cspCheck: [
+    async ({}, provide) => {
+      await provide();
+      const found = cspViolations.splice(0);
+      expect(found, "the Content-Security-Policy blocked something").toEqual([]);
+    },
+    { auto: true },
+  ],
   context: async ({ browser }, provide) => {
     const context = await newDevice(browser);
     await provide(context);

@@ -9,6 +9,10 @@
 //                    localhost and private IP ranges, so even if the laptop is
 //                    stolen, the key can't impersonate a bank or email site to
 //                    anyone who installed the root.
+// Both are also limited to TLS certificates (extended key usage: server and
+// client auth, exactly what Caddy puts on the hub's certificate), so the key
+// can't sign code or email (S/MIME) either: those carry no DNS name, so the
+// name constraints alone wouldn't stop them.
 // The intermediate is valid 3 years; after that, setup -NewCertificates makes a
 // new pair and every device installs the new root (the old key is gone).
 //
@@ -57,6 +61,8 @@ const name = (cn: string) => seq(set(seq(oid("2.5.4.10"), tlv(0x0c, Buffer.from(
 const extension = (id: string, critical: boolean, value: Buffer) => seq(oid(id), ...(critical ? [bool(true)] : []), octets(value));
 
 const ECDSA_SHA256 = seq(oid("1.2.840.10045.4.3.2"));
+const SERVER_AUTH = "1.3.6.1.5.5.7.3.1";
+const CLIENT_AUTH = "1.3.6.1.5.5.7.3.2";
 const KEY_CERT_SIGN = 0x04;
 const CRL_SIGN = 0x02;
 
@@ -104,6 +110,8 @@ function certificate(o: {
     extension("2.5.29.35", false, seq(tlv(0x80, o.issuerKeyId))),
     // On the root too, for the clients that also enforce constraints on trust anchors.
     extension("2.5.29.30", true, nameConstraints()),
+    // Not critical: clients that enforce EKU on CAs (Windows, Apple, Chrome) apply it through the chain.
+    extension("2.5.29.37", false, seq(oid(SERVER_AUTH), oid(CLIENT_AUTH))),
   ];
   const tbs = seq(
     tlv(0xa0, int(2)), // v3

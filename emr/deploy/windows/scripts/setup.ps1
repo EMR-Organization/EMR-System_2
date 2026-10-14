@@ -64,6 +64,13 @@ while (-not $Role) {
     if ($NonInteractive -and -not $Role) { Stop-WithError 'Give -Role hub or -Role fallback.' }
 }
 
+# Only this Windows account (plus SYSTEM and Administrators) may change the
+# EMR folder. Folders made under C:\ let every local user modify them, and
+# start-hub and the nightly backup run app\ and runtime\ as this account, which
+# can read the keys: another account swapping node.exe would get them.
+Write-Step 'Restricting the EMR folder to this Windows account'
+Protect-Folder $Root
+
 if ($firstRun) {
     Write-Step "Creating this $Role's settings and secrets"
     if (-not $NodeId) {

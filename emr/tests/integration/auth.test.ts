@@ -101,8 +101,11 @@ describe("signIn", () => {
     const user = await createUser();
     const wrong = users.signIn({ email: user.email, password: "wrong password here" });
     const unknown = users.signIn({ email: `nobody-${crypto.randomUUID()}@example.org`, password: "whatever passw0rd" });
-    await expect(wrong).rejects.toMatchObject({ messageKey: "invalidCredentials" });
-    await expect(unknown).rejects.toMatchObject({ messageKey: "invalidCredentials" });
+    // Awaited together: awaiting one first would leave the other's rejection unhandled if it came first.
+    await Promise.all([
+      expect(wrong).rejects.toMatchObject({ messageKey: "invalidCredentials" }),
+      expect(unknown).rejects.toMatchObject({ messageKey: "invalidCredentials" }),
+    ]);
   });
 
   it("tells pending and disabled users their status only after a correct password, with no session", async () => {
@@ -132,6 +135,33 @@ describe("signIn", () => {
 
     await db.user.update({ where: { id: user.id }, data: { lockedUntil: new Date(Date.now() - 1000) } });
     await expect(users.signIn({ email: user.email, password: user.password })).resolves.toEqual({ status: "ACTIVE" });
+  });
+
+  it("parallel guesses still get only 5 password checks before the lock", async () => {
+    const user = await createUser();
+    const guesses = Array.from({ length: 12 }, (_, i) => users.signIn({ email: user.email, password: `parallel guess ${i}` }));
+    const results = await Promise.allSettled(guesses);
+    expect(results.every((r) => r.status === "rejected")).toBe(true);
+
+    const entries = await db.auditLog.findMany({ where: { entityId: user.id, action: { in: ["auth.signin.failed", "auth.lockout"] } } });
+    const checked = entries.filter((e) => (e.details as { reason?: string }).reason === "password");
+    expect(checked).toHaveLength(users.MAX_FAILED_LOGINS);
+    expect(entries.filter((e) => e.action === "auth.lockout")).toHaveLength(1);
+    expect((await db.user.findUniqueOrThrow({ where: { id: user.id } })).lockedUntil!.getTime()).toBeGreaterThan(Date.now());
+  });
+
+  it("a sign-in interrupted after its attempt was counted can't leave the account stuck", async () => {
+    const user = await createUser();
+    // As if the hub crashed after counting a 5th attempt, before checking the password.
+    await db.$executeRaw`UPDATE "User" SET "failedLogins" = 5, "lockedUntil" = now() + interval '15 minutes' WHERE id = ${user.id}`;
+    await expect(users.signIn({ email: user.email, password: user.password })).rejects.toMatchObject({ messageKey: "invalidCredentials" });
+    // The lock is a real one with an end time, so admins see "Locked" and can unlock it.
+    expect((await db.user.findUniqueOrThrow({ where: { id: user.id } })).lockedUntil!.getTime()).toBeGreaterThan(Date.now());
+
+    // Once the lock runs out, the count starts again and the right password works.
+    await db.user.update({ where: { id: user.id }, data: { lockedUntil: new Date(Date.now() - 1000) } });
+    await expect(users.signIn({ email: user.email, password: user.password })).resolves.toEqual({ status: "ACTIVE" });
+    expect(await db.user.findUniqueOrThrow({ where: { id: user.id } })).toMatchObject({ failedLogins: 0, lockedUntil: null });
   });
 
   it("rate-limits by IP", async () => {

@@ -139,7 +139,6 @@ export async function signIn(input: unknown): Promise<SignInResult> {
     select: {
       id: true,
       status: true,
-      lockedUntil: true,
       accounts: { where: { providerId: CREDENTIAL_PROVIDER }, select: { password: true } },
     },
   });
@@ -151,14 +150,29 @@ export async function signIn(input: unknown): Promise<SignInResult> {
     throw invalidCredentials();
   }
 
-  if (user.lockedUntil && user.lockedUntil.getTime() > Date.now()) {
+  // Claim one of the 5 attempts BEFORE checking the password, in one atomic
+  // update. Checking the lock first and counting afterwards let 30 parallel
+  // guesses all pass the check while the slow password hashes ran. The claim
+  // that uses up the 5th attempt sets the lock itself (a correct password then
+  // clears it), so a crash mid-sign-in can't leave the account stuck; an
+  // expired lock starts the count again.
+  const claimed = await db.$queryRaw<{ failedLogins: number }[]>`
+    UPDATE "User" SET
+      "failedLogins" = (CASE WHEN "lockedUntil" IS NOT NULL THEN 0 ELSE "failedLogins" END) + 1,
+      "lockedUntil" = CASE
+        WHEN (CASE WHEN "lockedUntil" IS NOT NULL THEN 0 ELSE "failedLogins" END) + 1 >= ${MAX_FAILED_LOGINS}
+        THEN now() + ${LOCKOUT_MS} * interval '1 millisecond'
+      END
+    WHERE id = ${user.id} AND ("lockedUntil" IS NULL OR "lockedUntil" <= now())
+    RETURNING "failedLogins"`;
+  if (claimed.length === 0) {
     await burnPasswordCheck(password);
     await auditOnly({ userId: user.id, ip }, { action: "auth.signin.failed", entity: "User", entityId: user.id, details: { reason: "locked" } });
     throw invalidCredentials();
   }
 
   if (!(await verifyPassword(passwordHash, password))) {
-    await recordFailedLogin(user.id, ip);
+    await recordFailedLogin(user.id, ip, claimed[0].failedLogins);
     throw invalidCredentials();
   }
 
@@ -184,26 +198,13 @@ function invalidCredentials() {
   return new ValidationError({ form: ["invalidCredentials"] }, "invalidCredentials");
 }
 
-async function recordFailedLogin(userId: string, ip: string) {
-  await db.$transaction(async (tx) => {
-    const { failedLogins } = await tx.user.update({
-      where: { id: userId },
-      data: { failedLogins: { increment: 1 } },
-      select: { failedLogins: true },
-    });
-    const locked = failedLogins >= MAX_FAILED_LOGINS;
-    if (locked) {
-      await tx.user.update({
-        where: { id: userId },
-        data: { failedLogins: 0, lockedUntil: new Date(Date.now() + LOCKOUT_MS) },
-      });
-    }
-    await audit(tx, { userId, ip }, {
-      action: locked ? "auth.lockout" : "auth.signin.failed",
-      entity: "User",
-      entityId: userId,
-      details: { reason: "password", failedLogins },
-    });
+/** The attempt was already counted, and the 5th already set the lock (the claim in signIn). */
+async function recordFailedLogin(userId: string, ip: string, failedLogins: number) {
+  await auditOnly({ userId, ip }, {
+    action: failedLogins >= MAX_FAILED_LOGINS ? "auth.lockout" : "auth.signin.failed",
+    entity: "User",
+    entityId: userId,
+    details: { reason: "password", failedLogins },
   });
 }
 

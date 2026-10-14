@@ -43,6 +43,12 @@ export async function exportTrip(input: unknown): Promise<{ fileName: string; co
     : { fileName: `emr_patients_${trip.code}_${stamp}.csv`, contentType: "text/csv; charset=utf-8", body };
 }
 
+/** Called by the upload route before reading the body. */
+export async function assertCanImportTrip(tripId: unknown): Promise<void> {
+  const actor = await requireUser();
+  await assertCan(actor, "data.import", { tripId: parse(z.uuid(), tripId) });
+}
+
 /**
  * Validates a trip data file and merges it into this trip. With dryRun, does
  * everything inside a transaction that is then rolled back, so the admin sees
