@@ -1,4 +1,5 @@
 import { getFormatter, getTranslations } from "next-intl/server";
+import { optionLabel } from "@/lib/option-label";
 import { Suspense } from "react";
 import { FormSuccessBanner } from "@/components/form-success-banner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +22,7 @@ async function Overview({ params, searchParams }: Props) {
   const t = await getTranslations("Patient");
   const f = await getTranslations("PatientForm");
   const r = await getTranslations("Risk");
+  const o = await getTranslations("Options");
   const format = await getFormatter();
   const { patientId } = await params;
   const { registered } = await searchParams;
@@ -34,9 +36,9 @@ async function Overview({ params, searchParams }: Props) {
     [f("phone"), p.phone ?? dash],
     [f("emergencyContact"), p.emergencyContact ?? dash],
     [f("address"), p.address ?? dash],
-    [f("waterSource"), p.waterSource ?? dash],
+    [f("waterSource"), p.waterSource ? optionLabel(o, "waterSources", p.waterSource) : dash],
     [f("waterRisk"), p.waterRiskRating ? r(p.waterRiskRating) : dash],
-    [f("waterHistory"), p.waterHistory.length ? p.waterHistory.join(", ") : dash],
+    [f("waterHistory"), p.waterHistory.length ? p.waterHistory.map((w) => optionLabel(o, "waterConditions", w)).join(", ") : dash],
     [f("waterNotes"), p.waterNotes ?? dash],
   ];
 

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, useTransition, type FormEvent } from "react";
 import { useActionFeedback } from "@/components/action-feedback";
 import { asOptions, Field, FormError, SelectField, TextareaField, useServerForm, type FormState } from "@/components/form";
+import { optionLabel } from "@/lib/option-label";
 import { Button } from "@/components/ui/button";
 import { COMMON_MEDICATIONS, MEDICATION_FREQUENCIES, MEDICATION_ROUTES, PHOTO_CATEGORIES, VISIT_TYPES } from "@/lib/shared/constants";
 import { addVisitAction, discontinueAction, prescribeAction, recordDiagnosisAction } from "./actions";
@@ -51,6 +52,7 @@ export function DiagnosisForm({
 
 export function PrescribeForm({ patientId, today }: { patientId: string; today: string }) {
   const t = useTranslations("Medications");
+  const o = useTranslations("Options");
   const [state, onSubmit, pending] = useServerForm(prescribeAction.bind(null, patientId));
   const form = useSuccess(state, t("saved"));
   const [name, setName] = useState("");
@@ -66,13 +68,13 @@ export function PrescribeForm({ patientId, today }: { patientId: string; today: 
         placeholder="—"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        options={asOptions(COMMON_MEDICATIONS)}
+        options={asOptions(COMMON_MEDICATIONS, (x) => optionLabel(o, "medications", x))}
         state={state}
       />
       {name === "Other" && <Field name="otherName" label={t("otherName")} required state={state} />}
       <Field name="dosage" label={t("dosage")} placeholder={t("dosagePlaceholder")} required state={state} />
-      <SelectField name="frequency" label={t("frequency")} required placeholder="—" options={asOptions(MEDICATION_FREQUENCIES)} state={state} />
-      <SelectField name="route" label={t("route")} placeholder="—" options={asOptions(MEDICATION_ROUTES)} state={state} />
+      <SelectField name="frequency" label={t("frequency")} required placeholder="—" options={asOptions(MEDICATION_FREQUENCIES, (x) => optionLabel(o, "frequencies", x))} state={state} />
+      <SelectField name="route" label={t("route")} placeholder="—" options={asOptions(MEDICATION_ROUTES, (x) => optionLabel(o, "routes", x))} state={state} />
       <Field name="startDate" label={t("startDate")} type="date" defaultValue={today} state={state} />
       <Field name="prescribedFor" label={t("prescribedFor")} state={state} />
       <div className="sm:col-span-2">
@@ -131,6 +133,7 @@ export function DiscontinueForm({ patientId, medicationId, version, name }: { pa
 
 export function VisitForm({ patientId, today }: { patientId: string; today: string }) {
   const t = useTranslations("Visits");
+  const o = useTranslations("Options");
   const [state, onSubmit, pending] = useServerForm(addVisitAction.bind(null, patientId));
   const form = useSuccess(state, t("saved"));
   return (
@@ -138,7 +141,7 @@ export function VisitForm({ patientId, today }: { patientId: string; today: stri
       <div className="sm:col-span-2">
         <FormError state={state} />
       </div>
-      <SelectField name="visitType" label={t("visitType")} required placeholder="—" options={asOptions(VISIT_TYPES)} state={state} />
+      <SelectField name="visitType" label={t("visitType")} required placeholder="—" options={asOptions(VISIT_TYPES, (x) => optionLabel(o, "visitTypes", x))} state={state} />
       <Field name="date" label={t("date")} type="date" max={today} defaultValue={today} state={state} />
       <Field name="chiefComplaint" label={t("chiefComplaint")} state={state} />
       <Field name="followUpDate" label={t("followUpDate")} type="date" min={today} state={state} />
@@ -164,6 +167,7 @@ export function VisitForm({ patientId, today }: { patientId: string; today: stri
 /** Uploads to the photo route handler (not a server action, see the route for why). */
 export function PhotoUploadForm({ patientId, today }: { patientId: string; today: string }) {
   const t = useTranslations("Photos");
+  const o = useTranslations("Options");
   const router = useRouter();
   const feedback = useActionFeedback();
   const [state, setState] = useState<FormState>(null);
@@ -207,7 +211,7 @@ export function PhotoUploadForm({ patientId, today }: { patientId: string; today
         ]}
         state={state}
       />
-      <SelectField name="category" label={t("category")} placeholder="—" options={asOptions(PHOTO_CATEGORIES)} state={state} />
+      <SelectField name="category" label={t("category")} placeholder="—" options={asOptions(PHOTO_CATEGORIES, (x) => optionLabel(o, "photoCategories", x))} state={state} />
       <Field name="description" label={t("description")} state={state} />
       <Field name="takenOn" label={t("takenOn")} type="date" max={today} defaultValue={today} state={state} />
       <div className="sm:col-span-2">

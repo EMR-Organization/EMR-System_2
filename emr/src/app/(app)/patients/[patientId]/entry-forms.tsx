@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { useActionFeedback } from "@/components/action-feedback";
 import { asOptions, Field, FormError, SelectField, TextareaField, useServerForm, type FormState } from "@/components/form";
+import { optionLabel } from "@/lib/option-label";
 import { Button } from "@/components/ui/button";
 import { GLUCOSE_TIMINGS, INSULIN_TYPES, PREEXISTING_CONDITIONS } from "@/lib/shared/constants";
 import { addConditionAction, addDiabeticAction, addVitalsAction } from "./actions";
@@ -64,6 +65,7 @@ export function VitalsForm({ patientId }: { patientId: string }) {
 
 export function DiabeticForm({ patientId }: { patientId: string }) {
   const t = useTranslations("Diabetic");
+  const o = useTranslations("Options");
   const [state, onSubmit, pending] = useServerForm(addDiabeticAction.bind(null, patientId));
   const form = useResetOnSuccess(state, t("saved"));
   return (
@@ -72,8 +74,8 @@ export function DiabeticForm({ patientId }: { patientId: string }) {
         <FormError state={state} />
       </div>
       <Field name="bloodGlucose" label={t("bloodGlucose")} {...numberProps} min={20} max={600} state={state} />
-      <SelectField name="glucoseTiming" label={t("glucoseTiming")} placeholder="—" options={asOptions(GLUCOSE_TIMINGS)} state={state} />
-      <SelectField name="insulinType" label={t("insulinType")} placeholder="—" options={asOptions(INSULIN_TYPES)} state={state} />
+      <SelectField name="glucoseTiming" label={t("glucoseTiming")} placeholder="—" options={asOptions(GLUCOSE_TIMINGS, (x) => optionLabel(o, "glucoseTimings", x))} state={state} />
+      <SelectField name="insulinType" label={t("insulinType")} placeholder="—" options={asOptions(INSULIN_TYPES, (x) => optionLabel(o, "insulinTypes", x))} state={state} />
       <Field name="insulinDose" label={t("insulinDose")} {...numberProps} min={0} max={100} state={state} />
       <Field name="bpSystolic" label={t("bpSystolic")} {...numberProps} min={60} max={250} state={state} />
       <Field name="bpDiastolic" label={t("bpDiastolic")} {...numberProps} min={40} max={150} state={state} />
@@ -94,6 +96,7 @@ export function DiabeticForm({ patientId }: { patientId: string }) {
 
 export function ConditionForm({ patientId, today }: { patientId: string; today: string }) {
   const t = useTranslations("Conditions");
+  const o = useTranslations("Options");
   const sev = useTranslations("Severity");
   const [state, onSubmit, pending] = useServerForm(addConditionAction.bind(null, patientId));
   const form = useResetOnSuccess(state, t("saved"));
@@ -110,7 +113,7 @@ export function ConditionForm({ patientId, today }: { patientId: string; today: 
         placeholder="—"
         value={condition}
         onChange={(e) => setCondition(e.target.value)}
-        options={asOptions(PREEXISTING_CONDITIONS.filter((c) => c !== "None"))}
+        options={asOptions(PREEXISTING_CONDITIONS.filter((c) => c !== "None"), (x) => optionLabel(o, "conditions", x))}
         state={state}
       />
       {condition === "Other" && <Field name="otherName" label={t("otherName")} required state={state} />}

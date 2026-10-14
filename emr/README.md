@@ -119,7 +119,12 @@ Services are the only way in. Each starts with `requireUser()` (`src/server/auth
 
 ## UI text
 
-All user-facing text lives in `messages/en.json` and is read with `next-intl` (`getTranslations` in server components, `useTranslations` in client components). Don't hardcode strings in components, so a Spanish translation can be added later without touching them.
+All user-facing text lives in `messages/en.json` and `messages/es.json` and is read with `next-intl` (`getTranslations` in server components, `useTranslations` in client components). Don't hardcode strings in components.
+
+- **Adding or changing a string:** change it in both files. `tests/unit/messages.test.ts` fails if a key is missing from either file, or if a message's placeholders (`{name}`, `{count, plural, …}`) differ.
+- **Choosing the language:** each device picks English or Español with the switcher at the top, saved in a cookie. A device that hasn't picked gets its browser's language, falling back to English (`src/i18n/locales.ts`).
+- **Option lists** (`src/lib/shared/constants.ts`: conditions, medications, frequencies…) are stored in English and translated only for display. Use `optionLabel()` from `src/lib/option-label.ts`; labels live under `Options` in both message files. Records, exports and sync are the same whichever language entered them.
+- **Spanish wording:** it should be checked by a native speaker with clinical experience before the trip; fix wording in `messages/es.json` only.
 
 ## Known tooling issue
 

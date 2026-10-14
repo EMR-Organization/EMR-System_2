@@ -40,6 +40,10 @@ Open the EMR address again. There should be no warning and a padlock in the addr
 
 If `emr-hub.local` doesn't load on an Android phone, use the number address (`https://192.168.…`) instead; some Android versions don't look up `.local` names.
 
+## Language
+
+English or Español: tap the language at the top of any screen (including sign-in). Each device remembers its own choice; a phone set to Spanish starts in Spanish. Records are stored the same way in either language, so people can use different languages on the same patient.
+
 ## After the trip
 
 You may remove the certificate: iPhone: Settings → General → VPN & Device Management → the profile → Remove. Android: Settings → Encryption & credentials → User credentials. Windows: `certmgr.msc` → Trusted Root → HF EMR Local Authority → Delete. Mac: Keychain Access → delete it.

@@ -1,4 +1,5 @@
 import { getFormatter, getTranslations } from "next-intl/server";
+import { optionLabel } from "@/lib/option-label";
 import { Suspense } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +21,8 @@ export default function MedicationsPage({ params }: Props) {
 
 async function Medications({ params }: Pick<Props, "params">) {
   const t = await getTranslations("Medications");
+  const o = await getTranslations("Options");
+  const med = (name: string) => optionLabel(o, "medications", name);
   const format = await getFormatter();
   const { patientId } = await params;
   const p = await orSignIn(() => loadPatient(patientId));
@@ -46,8 +49,8 @@ async function Medications({ params }: Pick<Props, "params">) {
                 <li key={m.id} className="flex flex-wrap items-start justify-between gap-3 py-3 text-sm">
                   <div className="grid gap-0.5">
                     <span className="font-medium">
-                      {m.name} · {m.dosage} · {m.frequency}
-                      {m.route ? ` · ${m.route}` : ""}
+                      {med(m.name)} · {m.dosage} · {optionLabel(o, "frequencies", m.frequency)}
+                      {m.route ? ` · ${optionLabel(o, "routes", m.route)}` : ""}
                     </span>
                     <span className="text-muted-foreground">
                       {t("started", { date: day(m.startDate) })}
@@ -55,7 +58,7 @@ async function Medications({ params }: Pick<Props, "params">) {
                     </span>
                     {m.instructions && <span className="whitespace-pre-wrap">{m.instructions}</span>}
                   </div>
-                  {canWrite && <DiscontinueForm patientId={patientId} medicationId={m.id} version={m.version} name={m.name} />}
+                  {canWrite && <DiscontinueForm patientId={patientId} medicationId={m.id} version={m.version} name={med(m.name)} />}
                 </li>
               ))}
             </ul>
@@ -89,7 +92,7 @@ async function Medications({ params }: Pick<Props, "params">) {
                 <li key={m.id} className="grid gap-0.5 py-3 text-sm text-muted-foreground">
                   <span className="flex flex-wrap items-center gap-2">
                     <span className="line-through">
-                      {m.name} · {m.dosage}
+                      {med(m.name)} · {m.dosage}
                     </span>
                     <Badge variant="secondary">{t("ended", { date: day(m.endDate) })}</Badge>
                   </span>

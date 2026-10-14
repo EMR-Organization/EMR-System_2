@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { asOptions, Field, SelectField, TextareaField, type FormState } from "@/components/form";
+import { optionLabel } from "@/lib/option-label";
 import { WATER_CONTAMINATION_CONDITIONS, WATER_SOURCES } from "@/lib/shared/constants";
 
 export type PatientDefaults = {
@@ -28,6 +29,7 @@ export function PatientFields({ state, defaults = {}, today }: { state: FormStat
   const g = useTranslations("Gender");
   const sp = useTranslations("Specialties");
   const r = useTranslations("Risk");
+  const o = useTranslations("Options");
   const [dob, setDob] = useState(defaults.dateOfBirth ?? "");
   const v = (x: string | null | undefined) => x ?? "";
 
@@ -104,7 +106,7 @@ export function PatientFields({ state, defaults = {}, today }: { state: FormStat
           label={t("waterSource")}
           defaultValue={v(defaults.waterSource)}
           placeholder={t("choose")}
-          options={asOptions(WATER_SOURCES)}
+          options={asOptions(WATER_SOURCES, (x) => optionLabel(o, "waterSources", x))}
           state={state}
         />
         <SelectField
@@ -121,7 +123,7 @@ export function PatientFields({ state, defaults = {}, today }: { state: FormStat
             {WATER_CONTAMINATION_CONDITIONS.map((c) => (
               <label key={c} className="flex items-center gap-2 text-sm">
                 <input type="checkbox" name="waterHistory" value={c} defaultChecked={defaults.waterHistory?.includes(c)} />
-                {c}
+                {optionLabel(o, "waterConditions", c)}
               </label>
             ))}
           </div>

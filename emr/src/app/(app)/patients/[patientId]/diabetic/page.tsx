@@ -1,4 +1,5 @@
 import { getFormatter, getTranslations } from "next-intl/server";
+import { optionLabel } from "@/lib/option-label";
 import { Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { orSignIn } from "@/server/page";
@@ -18,6 +19,7 @@ export default function DiabeticPage({ params }: Props) {
 
 async function Diabetic({ params }: Pick<Props, "params">) {
   const t = await getTranslations("Diabetic");
+  const o = await getTranslations("Options");
   const format = await getFormatter();
   const { patientId } = await params;
   const p = await orSignIn(() => loadPatient(patientId));
@@ -55,10 +57,10 @@ async function Diabetic({ params }: Pick<Props, "params">) {
                   <span className="flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground tabular-nums">
                     <span>
                       {t("bloodGlucose")} {n(d.bloodGlucose)}
-                      {d.glucoseTiming ? ` (${d.glucoseTiming})` : ""}
+                      {d.glucoseTiming ? ` (${optionLabel(o, "glucoseTimings", d.glucoseTiming)})` : ""}
                     </span>
                     <span>
-                      {t("insulinType")} {d.insulinType ?? "—"} {d.insulinDose !== null ? `· ${n(d.insulinDose)}` : ""}
+                      {t("insulinType")} {d.insulinType ? optionLabel(o, "insulinTypes", d.insulinType) : "—"} {d.insulinDose !== null ? `· ${n(d.insulinDose)}` : ""}
                     </span>
                     <span>
                       {t("bp")} {d.bpSystolic !== null ? `${d.bpSystolic}/${d.bpDiastolic}` : "—"}
