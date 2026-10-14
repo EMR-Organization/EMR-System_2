@@ -11,3 +11,4 @@ config({ quiet: true });
 
 // Photos written by tests go to a throwaway directory.
 process.env.PHOTOS_DIR = mkdtempSync(path.join(tmpdir(), "emr-photos-"));
+process.env.BACKUP_DIR = mkdtempSync(path.join(tmpdir(), "emr-backups-"));

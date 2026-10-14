@@ -1,0 +1,9 @@
+{
+  "03_2019": {
+    "name": "Fixture Trip",
+    "month": 3,
+    "year": 2019,
+    "location": "Fixtureville",
+    "created_at": "2019-03-01"
+  }
+}

@@ -29,6 +29,7 @@ async function TripHeader({ params }: Pick<LayoutProps<"/trips/[tripId]">, "para
   ];
   if (permissions.includes("visit.read")) tabs.push({ href: `/trips/${trip.id}/queue`, label: t("queueTab") });
   if (permissions.includes("trip.members.toggle")) tabs.push({ href: `/trips/${trip.id}/members`, label: t("members") });
+  if (permissions.includes("data.export")) tabs.push({ href: `/trips/${trip.id}/data`, label: t("dataTab") });
 
   return (
     <header className="grid grid-cols-[minmax(0,1fr)] gap-3">

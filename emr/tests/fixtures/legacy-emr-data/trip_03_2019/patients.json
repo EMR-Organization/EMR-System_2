@@ -1,0 +1,194 @@
+{
+  "001_03_2019": {
+    "first_name": "Fakefirst",
+    "last_name": "Fakelast",
+    "date_of_birth": "1975-06-15",
+    "age_value": 43,
+    "age_unit": "Years (2–130)",
+    "age_at_registration": 43,
+    "gender": "Female",
+    "phone": "555-0101",
+    "address": "1 Fixture Road",
+    "emergency_contact": "Fake Contact 555-0102",
+    "photo": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+    "water_source": "Well Water",
+    "water_risk_rating": "High",
+    "water_related_history": [
+      "Cholera",
+      "Typhoid Fever"
+    ],
+    "water_notes": "Boils water sometimes",
+    "conditions": [
+      {
+        "condition": "Hypertension",
+        "diagnosis_date": "2018-01-10",
+        "severity": "Moderate",
+        "notes": "On meds"
+      },
+      {
+        "condition": "None",
+        "diagnosis_date": "2019-03-02",
+        "severity": "N/A",
+        "notes": "No preexisting conditions"
+      }
+    ],
+    "vital_entries": [
+      {
+        "date": "2019-03-02",
+        "time": "09:15:00",
+        "bp_systolic": 150,
+        "bp_diastolic": 95,
+        "blood_pressure": "150/95",
+        "heart_rate": 80,
+        "temperature": 37.2,
+        "weight": 68.5,
+        "weight_lbs": 151.0,
+        "height": 160,
+        "bmi": 26.8,
+        "respiratory_rate": 16,
+        "oxygen_saturation": 97,
+        "notes": "Rested 5 min"
+      }
+    ],
+    "diabetic_entries": [
+      {
+        "date": "2019-03-02",
+        "time": "09:30:00",
+        "blood_glucose": 180,
+        "glucose_timing": "Fasting",
+        "insulin_type": "None",
+        "insulin_dose": 0,
+        "bp_systolic": 148,
+        "bp_diastolic": 92,
+        "blood_pressure": "148/92",
+        "total_cholesterol": 210,
+        "ldl": 0,
+        "hdl": 45,
+        "triglycerides": 160,
+        "hba1c": 7.4,
+        "notes": "Fasting since 8pm"
+      }
+    ],
+    "medical_photos": [
+      {
+        "image": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+        "date": "2019-03-02",
+        "description": "Left foot",
+        "category": "Wound/Injury",
+        "notes": "Healing"
+      },
+      {
+        "image": "bm90IGFuIGltYWdl",
+        "date": "2019-03-02",
+        "description": "Broken",
+        "category": "Other",
+        "notes": ""
+      }
+    ],
+    "visits": [
+      {
+        "trip_visit": true,
+        "patient_id": "001_03_2019",
+        "date": "2019-03-02",
+        "recorded_at": "2019-03-02 09:00:00",
+        "doctor_type": "Physician",
+        "vitals": null,
+        "diagnosis_info": {
+          "chief_complaint": "Headache",
+          "diagnosis": "Hypertension",
+          "treatment": "Lisinopril"
+        },
+        "medications": []
+      },
+      {
+        "date": "2019-03-03",
+        "time": "10:00:00",
+        "visit_type": "Follow-up",
+        "chief_complaint": "Recheck",
+        "symptoms": "None",
+        "diagnosis": "Improving",
+        "treatment": "Continue",
+        "medications_prescribed": "Lisinopril 10 mg (Once daily)",
+        "doctor_type": "Physician",
+        "auto_saved": true,
+        "follow_up_date": "2019-04-01",
+        "notes": "Prescribed by Physician.",
+        "recorded_at": "2019-03-03 10:00:00"
+      }
+    ],
+    "medications": [
+      {
+        "medication": "Lisinopril",
+        "dosage": "10 mg",
+        "frequency": "Once daily",
+        "route": "Oral",
+        "start_date": "2019-03-02",
+        "end_date": null,
+        "prescribed_for": "Hypertension",
+        "instructions": "With water",
+        "notes": "",
+        "status": "Active",
+        "discontinue_reason": null
+      },
+      {
+        "medication": "Ibuprofen",
+        "dosage": "200 mg",
+        "frequency": "As needed",
+        "route": "Oral",
+        "start_date": "2019-03-02",
+        "end_date": "2019-03-03",
+        "prescribed_for": "Headache",
+        "instructions": "",
+        "notes": "",
+        "status": "Discontinued",
+        "discontinue_reason": "Entered in error"
+      }
+    ],
+    "diagnosis": {
+      "chief_complaint": "Headache",
+      "diagnosis": "Hypertension",
+      "treatment": "Lisinopril",
+      "doctor_type": "Physician",
+      "recorded_at": "2019-03-02 09:20:00"
+    },
+    "assigned_doctor_type": "Physician",
+    "registration_date": "2019-03-02"
+  },
+  "002_03_2019": {
+    "first_name": "Agefirst",
+    "last_name": "Agelast",
+    "date_of_birth": "1990-01-01",
+    "age_value": 8,
+    "age_unit": "Months (1–24)",
+    "age_at_registration": 0,
+    "gender": "Male",
+    "phone": "",
+    "address": "",
+    "emergency_contact": "",
+    "photo": null,
+    "water_source": "Municipal/Treated Water",
+    "water_risk_rating": "Low",
+    "water_related_history": [],
+    "water_notes": "",
+    "conditions": [],
+    "vital_entries": [],
+    "diabetic_entries": [],
+    "medical_photos": [],
+    "visits": [
+      {
+        "trip_visit": true,
+        "patient_id": "002_03_2019",
+        "date": "2019-03-02",
+        "recorded_at": "2019-03-02 11:00:00",
+        "doctor_type": null,
+        "vitals": null,
+        "diagnosis_info": null,
+        "medications": []
+      }
+    ],
+    "medications": [],
+    "diagnosis": {},
+    "assigned_doctor_type": "Pediatrician",
+    "registration_date": "2019-03-02"
+  }
+}
