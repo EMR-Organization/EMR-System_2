@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { localDay } from "@/lib/shared/dates";
 import { orSignIn } from "@/server/page";
 import { myPermissions } from "@/server/services/users";
 import { RegisterPatientForm } from "./register-form";
@@ -29,7 +30,7 @@ async function NewPatient({ params }: Pick<PageProps<"/trips/[tripId]/patients/n
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <RegisterPatientForm tripId={tripId} today={new Date().toISOString().slice(0, 10)} />
+        <RegisterPatientForm tripId={tripId} today={localDay()} />
       </CardContent>
     </Card>
   );

@@ -6,6 +6,7 @@ import {
   WATER_CONTAMINATION_CONDITIONS,
   WATER_SOURCES,
 } from "../constants";
+import { localDay } from "../dates";
 
 // Input shapes for patient data. The server parses every input with these.
 // Ranges follow the old app's form limits. Error messages are message keys.
@@ -33,7 +34,7 @@ const pastDate = z.preprocess(
   (v) => (v === "" || v === null ? undefined : v),
   z.iso
     .date({ error: "date" })
-    .refine((d) => d <= new Date().toISOString().slice(0, 10), { error: "futureDate" })
+    .refine((d) => d <= localDay(), { error: "futureDate" })
     .transform((d) => new Date(`${d}T00:00:00Z`))
     .optional(),
 );

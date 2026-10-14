@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { localDay } from "@/lib/shared/dates";
 import { orSignIn } from "@/server/page";
 import { listVisits } from "@/server/services/visits";
 import { loadPatient, loadPermissions } from "../data";
@@ -90,7 +91,7 @@ async function Visits({ params }: Pick<Props, "params">) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <VisitForm patientId={patientId} today={new Date().toISOString().slice(0, 10)} />
+            <VisitForm patientId={patientId} today={localDay()} />
           </CardContent>
         </Card>
       )}

@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { AgeText } from "@/components/age";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { Badge } from "@/components/ui/badge";
+import { localDay } from "@/lib/shared/dates";
 import { orSignIn } from "@/server/page";
 import { doctorQueue } from "@/server/services/dashboard";
 import { me } from "@/server/services/users";
@@ -28,7 +29,7 @@ async function Queue({ params, searchParams }: Props) {
   const [user, queue] = await orSignIn(() =>
     Promise.all([me(), doctorQueue({ tripId, specialty: typeof requested === "string" ? requested : undefined })]),
   );
-  const today = new Date().toISOString();
+  const today = localDay();
 
   return (
     <div className="grid gap-4">

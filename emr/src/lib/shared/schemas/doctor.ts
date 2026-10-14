@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { localDay, localDayAsDate } from "../dates";
 import { COMMON_MEDICATIONS, MEDICATION_FREQUENCIES, MEDICATION_ROUTES, PHOTO_CATEGORIES, VISIT_TYPES } from "../constants";
 
 // Inputs for the doctor's workflow and photos. Error messages are message keys.
@@ -14,8 +15,7 @@ const text = (max: number) =>
 const optionalEnum = <T extends readonly [string, ...string[]]>(values: T) =>
   z.preprocess((v) => (v === "" || v === null ? undefined : v), z.enum(values).optional());
 
-const isoDay = (v: Date) => v.toISOString().slice(0, 10);
-const today = () => isoDay(new Date());
+const today = localDay;
 const day = (rule?: (d: string) => boolean, error = "date") =>
   z.preprocess(
     (v) => (v === "" || v === null ? undefined : v),
@@ -39,7 +39,7 @@ export const diagnosisSchema = z.object({
 export const visitSchema = z.object({
   patientId: z.uuid(),
   visitType: z.enum(VISIT_TYPES, { error: "required" }),
-  date: day((d) => d <= today(), "futureDate").default(() => new Date(`${today()}T00:00:00Z`)),
+  date: day((d) => d <= today(), "futureDate").default(localDayAsDate),
   chiefComplaint: text(500),
   symptoms: text(5000),
   diagnosis: text(5000),
@@ -57,7 +57,7 @@ export const prescribeSchema = z
     dosage: z.string().trim().min(1, { error: "required" }).max(100, { error: "tooLongText" }),
     frequency: z.enum(MEDICATION_FREQUENCIES, { error: "required" }),
     route: optionalEnum(MEDICATION_ROUTES),
-    startDate: day().default(() => new Date(`${today()}T00:00:00Z`)),
+    startDate: day().default(localDayAsDate),
     prescribedFor: text(300),
     instructions: text(2000),
     notes: text(2000),
@@ -71,7 +71,7 @@ export const discontinueSchema = z.object({
   medicationId: z.uuid(),
   version: z.coerce.number().int().min(1),
   reason: z.string().trim().min(1, { error: "required" }).max(500, { error: "tooLongText" }),
-  endDate: day((d) => d <= today(), "futureDate").default(() => new Date(`${today()}T00:00:00Z`)),
+  endDate: day((d) => d <= today(), "futureDate").default(localDayAsDate),
 });
 
 export const PHOTO_MAX_BYTES = 5 * 1024 * 1024;

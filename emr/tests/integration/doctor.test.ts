@@ -48,6 +48,15 @@ async function setup(assignedSpecialty = "PHYSICIAN") {
 }
 
 describe("diagnosis", () => {
+  it("survives doctors saving at once on a patient with no trip visit yet (e.g. imported)", async () => {
+    const { patient } = await setup();
+    await db.visit.deleteMany({ where: { patientId: patient.id } });
+    const prescribeOnce = () => medications.prescribe({ patientId: patient.id, name: "Metformin", dosage: "500 mg", frequency: "Once daily" });
+    await expect(Promise.all([prescribeOnce(), prescribeOnce(), prescribeOnce()])).resolves.toHaveLength(3);
+    expect(await db.visit.count({ where: { patientId: patient.id, tripVisit: true } })).toBe(1);
+    expect(await db.medication.count({ where: { patientId: patient.id, visit: { tripVisit: true } } })).toBe(3);
+  });
+
   it("is saved on the trip visit with the doctor's specialty, with optimistic locking", async () => {
     const { patient, dentist } = await setup();
     const visit = await visits.getTripVisit(patient.id);

@@ -2,6 +2,7 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { localDay } from "@/lib/shared/dates";
 import { orSignIn } from "@/server/page";
 import { listConditions } from "@/server/services/conditions";
 import { loadPatient, loadPermissions } from "../data";
@@ -64,7 +65,7 @@ async function Conditions({ params }: Pick<Props, "params">) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ConditionForm patientId={patientId} today={new Date().toISOString().slice(0, 10)} />
+            <ConditionForm patientId={patientId} today={localDay()} />
           </CardContent>
         </Card>
       )}

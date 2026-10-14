@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { AgeText } from "@/components/age";
 import { NavLinks, type NavItem } from "@/components/app-nav-links";
 import { Badge } from "@/components/ui/badge";
+import { localDay } from "@/lib/shared/dates";
 import { orSignIn } from "@/server/page";
 import { loadPatient, loadPermissions } from "./data";
 
@@ -55,7 +56,7 @@ async function PatientHeader({ params }: Pick<Props, "params">) {
           </Badge>
         </h1>
         <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-          {g(p.gender)} · <AgeText patient={p} today={new Date().toISOString()} />
+          {g(p.gender)} · <AgeText patient={p} today={localDay()} />
           <Badge variant="secondary">{sp(p.assignedSpecialty)}</Badge>
           {p.waterRiskRating === "HIGH" && <Badge variant="destructive">{r("HIGH")}</Badge>}
           {p.originLabel && <span>{t("originLabel", { label: p.originLabel })}</span>}

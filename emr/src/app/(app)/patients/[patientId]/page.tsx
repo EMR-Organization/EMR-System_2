@@ -2,6 +2,7 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { FormSuccessBanner } from "@/components/form-success-banner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { localDay } from "@/lib/shared/dates";
 import { orSignIn } from "@/server/page";
 import { loadPatient, loadPermissions } from "./data";
 import { DeletePatient, EditPatient } from "./overview-forms";
@@ -25,7 +26,7 @@ async function Overview({ params, searchParams }: Props) {
   const { registered } = await searchParams;
   const p = await orSignIn(() => loadPatient(patientId));
   const permissions = await orSignIn(() => loadPermissions(p.tripId));
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDay();
   const dash = t("none");
 
   const rows: [string, string][] = [
