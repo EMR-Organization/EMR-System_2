@@ -1,6 +1,9 @@
 import { getTranslations } from "next-intl/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResetForm } from "./reset-form";
+import { titled } from "@/app/page-title";
+
+export const generateMetadata = titled("Reset");
 
 export default async function ResetPage() {
   const t = await getTranslations("Reset");

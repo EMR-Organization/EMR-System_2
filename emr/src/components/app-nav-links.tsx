@@ -11,6 +11,8 @@ export type NavItem = { href: string; label: string };
  * `exactFirst`: the first item (e.g. a trip's Overview, whose href is a prefix
  * of the other tabs) is only current on its exact path.
  */
+// Links wrap onto a second row on phones rather than scrolling sideways: a
+// strip cut off at the screen edge hides that there's more (Backups, Data…).
 export function NavLinks({ items, className, exactFirst = false }: { items: NavItem[]; className?: string; exactFirst?: boolean }) {
   const pathname = usePathname();
   return (
@@ -24,7 +26,7 @@ export function NavLinks({ items, className, exactFirst = false }: { items: NavI
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "block rounded-md px-3 py-2 text-sm whitespace-nowrap hover:bg-muted",
+                "block rounded-md px-3 py-2 text-sm pointer-coarse:py-2.5 whitespace-nowrap hover:bg-muted",
                 active && "bg-muted font-medium text-foreground",
               )}
             >

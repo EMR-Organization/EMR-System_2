@@ -2,6 +2,9 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { titled } from "@/app/page-title";
+
+export const generateMetadata = titled("Pending");
 
 // Shown after registering, or after a correct password for an account that
 // isn't active. Holds no data; the status comes from the URL.
@@ -19,7 +22,7 @@ export default async function PendingPage({ searchParams }: PageProps<"/pending"
         <Suspense>
           <StatusMessage searchParams={searchParams} />
         </Suspense>
-        <Link className="text-primary underline-offset-4 hover:underline" href="/login">
+        <Link className="text-primary underline underline-offset-4 pointer-coarse:inline-block pointer-coarse:py-2.5" href="/login">
           {t("back")}
         </Link>
       </CardContent>

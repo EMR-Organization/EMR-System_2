@@ -8,6 +8,9 @@ import { orSignIn } from "@/server/page";
 import { listPhotos } from "@/server/services/photos";
 import { loadPatient, loadPermissions } from "../data";
 import { PhotoUploadForm } from "../doctor-forms";
+import { titled } from "@/app/page-title";
+
+export const generateMetadata = titled("Patient", "photosTab");
 
 type Props = PageProps<"/patients/[patientId]/photos">;
 

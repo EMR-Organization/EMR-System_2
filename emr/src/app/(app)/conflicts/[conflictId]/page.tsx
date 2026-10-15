@@ -5,16 +5,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { orSignIn } from "@/server/page";
 import { getConflict } from "@/server/services/sync";
 import { ResolveForm } from "./resolve-form";
+import { titled } from "@/app/page-title";
+
+export const generateMetadata = titled("Sync", "queueTitle");
 
 type Props = PageProps<"/conflicts/[conflictId]">;
 
 export default function ConflictPage({ params }: Props) {
   return (
-    <main className="mx-auto grid w-full grid-cols-[minmax(0,1fr)] max-w-3xl gap-6 px-4 py-6 md:py-8">
+    <div className="mx-auto grid w-full grid-cols-[minmax(0,1fr)] max-w-3xl gap-6 px-4 py-6 md:py-8">
       <Suspense>
         <Conflict params={params} />
       </Suspense>
-    </main>
+    </div>
   );
 }
 
@@ -26,13 +29,13 @@ async function Conflict({ params }: Pick<Props, "params">) {
   return (
     <>
       <div className="grid gap-1">
-        <Link href="/conflicts" className="text-sm underline">
+        <Link href="/conflicts" className="text-sm underline pointer-coarse:inline-block pointer-coarse:py-2.5">
           {t("back")}
         </Link>
         <h1 className="text-2xl font-semibold tracking-tight">{t("conflictTitle", { entity: t(`entity.${c.entity}`) })}</h1>
         {c.patient && (
           <p className="text-sm">
-            <Link href={`/patients/${c.patient.id}`} prefetch={false} className="underline">
+            <Link href={`/patients/${c.patient.id}`} prefetch={false} className="underline pointer-coarse:inline-block pointer-coarse:py-2.5">
               {c.patient.name} · {c.patient.label}
             </Link>
           </p>

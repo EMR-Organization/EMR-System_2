@@ -8,6 +8,9 @@ import { localDay } from "@/lib/shared/dates";
 import { orSignIn } from "@/server/page";
 import { doctorQueue } from "@/server/services/dashboard";
 import { me } from "@/server/services/users";
+import { titled } from "@/app/page-title";
+
+export const generateMetadata = titled("Queue");
 
 type Props = PageProps<"/trips/[tripId]/queue">;
 
@@ -46,7 +49,7 @@ async function Queue({ params, searchParams }: Props) {
               key={s}
               href={`?specialty=${s}`}
               aria-current={queue.specialty === s ? "page" : undefined}
-              className="rounded-md border px-3 py-1.5 aria-[current=page]:bg-muted aria-[current=page]:font-medium"
+              className="rounded-md border px-3 py-1.5 pointer-coarse:py-2.5 aria-[current=page]:bg-muted aria-[current=page]:font-medium"
             >
               {sp(s)}
             </Link>

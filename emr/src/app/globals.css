@@ -63,7 +63,7 @@
   --muted-foreground: oklch(0.556 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
+  --destructive: oklch(0.505 0.213 27.518); /* red-700: 4.5:1 even as text on its own 10% tint */
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
@@ -126,5 +126,13 @@
   }
   html {
     @apply font-sans;
+  }
+  /* Checkboxes and radios big enough to hit with a thumb on touch screens. */
+  @media (pointer: coarse) {
+    input[type="checkbox"],
+    input[type="radio"] {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
   }
 }

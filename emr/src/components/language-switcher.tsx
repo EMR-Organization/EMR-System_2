@@ -29,7 +29,7 @@ export function LanguageSwitcher({ className }: { className?: string }) {
               })
             }
             className={cn(
-              "rounded px-1.5 py-1 underline-offset-2 hover:underline disabled:opacity-60",
+              "rounded px-1.5 py-1 pointer-coarse:min-h-10 pointer-coarse:px-2.5 underline-offset-2 hover:underline disabled:opacity-60",
               current === locale ? "font-semibold text-foreground" : "text-muted-foreground",
             )}
           >

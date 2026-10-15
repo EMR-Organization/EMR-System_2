@@ -8,6 +8,9 @@ import { orSignIn } from "@/server/page";
 import { listConditions } from "@/server/services/conditions";
 import { loadPatient, loadPermissions } from "../data";
 import { ConditionForm } from "../entry-forms";
+import { titled } from "@/app/page-title";
+
+export const generateMetadata = titled("Patient", "conditions");
 
 type Props = PageProps<"/patients/[patientId]/conditions">;
 

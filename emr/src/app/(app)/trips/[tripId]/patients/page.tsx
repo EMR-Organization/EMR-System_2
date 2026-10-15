@@ -10,6 +10,9 @@ import { localDay } from "@/lib/shared/dates";
 import { orSignIn } from "@/server/page";
 import { listPatients } from "@/server/services/patients";
 import { myPermissions } from "@/server/services/users";
+import { titled } from "@/app/page-title";
+
+export const generateMetadata = titled("Patients");
 
 type Props = PageProps<"/trips/[tripId]/patients">;
 
@@ -45,7 +48,7 @@ async function PatientList({ params, searchParams }: Props) {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <form className="flex flex-wrap items-end gap-2" role="search">
           <Input name="q" defaultValue={filter.q} placeholder={t("search")} aria-label={t("search")} className="w-56" />
-          <select name="risk" defaultValue={filter.risk ?? ""} aria-label={t("allRisks")} className="h-8 rounded-lg border bg-background px-2 text-sm">
+          <select name="risk" defaultValue={filter.risk ?? ""} aria-label={t("allRisks")} className="h-8 pointer-coarse:h-10 rounded-lg border bg-background px-2 text-sm">
             <option value="">{t("allRisks")}</option>
             {(["HIGH", "MEDIUM", "LOW"] as const).map((v) => (
               <option key={v} value={v}>
@@ -53,7 +56,7 @@ async function PatientList({ params, searchParams }: Props) {
               </option>
             ))}
           </select>
-          <select name="specialty" defaultValue={filter.specialty ?? ""} aria-label={t("allSpecialties")} className="h-8 rounded-lg border bg-background px-2 text-sm">
+          <select name="specialty" defaultValue={filter.specialty ?? ""} aria-label={t("allSpecialties")} className="h-8 pointer-coarse:h-10 rounded-lg border bg-background px-2 text-sm">
             <option value="">{t("allSpecialties")}</option>
             {(["PHYSICIAN", "DENTIST", "PEDIATRICIAN"] as const).map((v) => (
               <option key={v} value={v}>
@@ -102,9 +105,9 @@ async function PatientList({ params, searchParams }: Props) {
 
       {pages > 1 && (
         <nav className="flex items-center justify-between text-sm" aria-label={t("page", { page: result.page, pages })}>
-          {result.page > 1 ? <Link href={pageHref(result.page - 1)}>{t("previous")}</Link> : <span />}
+          {result.page > 1 ? <Link href={pageHref(result.page - 1)} className={buttonVariants({ variant: "outline" })}>{t("previous")}</Link> : <span />}
           <span className="text-muted-foreground">{t("page", { page: result.page, pages })}</span>
-          {result.page < pages ? <Link href={pageHref(result.page + 1)}>{t("next")}</Link> : <span />}
+          {result.page < pages ? <Link href={pageHref(result.page + 1)} className={buttonVariants({ variant: "outline" })}>{t("next")}</Link> : <span />}
         </nav>
       )}
     </div>

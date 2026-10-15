@@ -5,6 +5,9 @@ import { Suspense } from "react";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { rootCertificate } from "@/server/setup-cert";
+import { titled } from "@/app/page-title";
+
+export const generateMetadata = titled("Setup");
 
 // Device setup, before sign-in: install the hub's certificate once per device
 // so the browser trusts https://emr-hub.local without warnings.
@@ -35,7 +38,7 @@ export default async function SetupPage() {
           <h2 className="font-medium">{t("computerTitle")}</h2>
           <p>{t("computer")}</p>
         </section>
-        <Link className="text-primary underline-offset-4 hover:underline" href="/login">
+        <Link className="text-primary underline underline-offset-4 pointer-coarse:inline-block pointer-coarse:py-2.5" href="/login">
           {t("done")}
         </Link>
       </CardContent>

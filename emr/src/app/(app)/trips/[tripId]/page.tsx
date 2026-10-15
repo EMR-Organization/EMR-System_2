@@ -7,6 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { orSignIn } from "@/server/page";
 import { tripStats } from "@/server/services/dashboard";
 import { myPermissions } from "@/server/services/users";
+import { titled } from "@/app/page-title";
+
+export const generateMetadata = titled("Trip", "overview");
 
 // Trip dashboard (get_trip_stats in the old app).
 export default function TripPage({ params }: PageProps<"/trips/[tripId]">) {

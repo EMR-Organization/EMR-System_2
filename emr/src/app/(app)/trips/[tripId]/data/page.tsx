@@ -6,6 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { orSignIn } from "@/server/page";
 import { myPermissions } from "@/server/services/users";
 import { ImportForm } from "./import-form";
+import { titled } from "@/app/page-title";
+
+export const generateMetadata = titled("Trip", "dataTab");
 
 export default function DataPage({ params }: PageProps<"/trips/[tripId]/data">) {
   return (

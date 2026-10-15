@@ -67,7 +67,7 @@ export function Field({ name, label, hint, state, id: idProp, ...inputProps }: F
   const errors = state && !state.ok ? (state.fieldErrors?.[name] ?? []) : [];
   // A custom id is needed when the same field appears more than once on a page.
   const id = idProp ?? `field-${name}`;
-  const describedBy = [hint ? `${id}-hint` : null, errors.length ? `${id}-error` : null].filter(Boolean).join(" ") || undefined;
+  const describedBy = describedById(id, hint, errors);
   return (
     <div className="grid gap-1.5">
       <Label htmlFor={id}>{label}</Label>
@@ -86,6 +86,11 @@ export function Field({ name, label, hint, state, id: idProp, ...inputProps }: F
       )}
     </div>
   );
+}
+
+/** Points a control at its hint and errors, so screen readers read them with it. */
+function describedById(id: string, hint: string | undefined, errors: string[]) {
+  return [hint ? `${id}-hint` : null, errors.length ? `${id}-error` : null].filter(Boolean).join(" ") || undefined;
 }
 
 function useFieldErrors(name: string, state: FormState) {
@@ -140,7 +145,7 @@ export function SelectField({ name, label, hint, state, options, placeholder, id
   const id = idProp ?? `field-${name}`;
   return (
     <FieldShell id={id} label={label} hint={hint} errors={errors} errorText={errorText}>
-      <select id={id} name={name} aria-invalid={errors.length > 0 || undefined} className={`${controlClass} h-8`} {...props}>
+      <select id={id} name={name} aria-invalid={errors.length > 0 || undefined} aria-describedby={describedById(id, hint, errors)} className={`${controlClass} h-8 pointer-coarse:h-10`} {...props}>
         {placeholder !== undefined && <option value="">{placeholder}</option>}
         {options.map((o) => (
           <option key={o.value} value={o.value}>
@@ -159,7 +164,7 @@ export function TextareaField({ name, label, hint, state, id: idProp, ...props }
   const id = idProp ?? `field-${name}`;
   return (
     <FieldShell id={id} label={label} hint={hint} errors={errors} errorText={errorText}>
-      <textarea id={id} name={name} rows={3} aria-invalid={errors.length > 0 || undefined} className={controlClass} {...props} />
+      <textarea id={id} name={name} rows={3} aria-invalid={errors.length > 0 || undefined} aria-describedby={describedById(id, hint, errors)} className={controlClass} {...props} />
     </FieldShell>
   );
 }

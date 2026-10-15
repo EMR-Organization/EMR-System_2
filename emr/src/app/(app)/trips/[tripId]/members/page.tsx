@@ -4,6 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { orSignIn } from "@/server/page";
 import { listMembers } from "@/server/services/trips";
 import { MemberSwitch } from "./member-switch";
+import { titled } from "@/app/page-title";
+
+export const generateMetadata = titled("Members");
 
 export default function MembersPage({ params }: PageProps<"/trips/[tripId]/members">) {
   return (

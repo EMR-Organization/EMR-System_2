@@ -16,9 +16,16 @@ export async function AppShell({ children }: { children: ReactNode }) {
   const c = await getTranslations("Common");
   return (
     <div className="flex min-h-full flex-1 flex-col md:flex-row">
+      {/* First thing a keyboard reaches: jumps past the navigation. */}
+      <a
+        href="#main"
+        className="sr-only z-50 rounded-md bg-background px-3 py-2 text-sm font-medium shadow focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
+      >
+        {c("skipToContent")}
+      </a>
       <aside className="border-b bg-muted/30 md:w-60 md:shrink-0 md:border-r md:border-b-0">
         <div className="flex items-center justify-between gap-2 px-4 py-3 md:block md:py-5">
-          <Link href="/trips" className="font-semibold tracking-tight text-primary">
+          <Link href="/trips" className="font-semibold tracking-tight text-primary pointer-coarse:inline-block pointer-coarse:py-2.5">
             {c("appName")}
           </Link>
           <LanguageSwitcher className="md:mt-2 md:-ml-1.5" />
@@ -27,7 +34,9 @@ export async function AppShell({ children }: { children: ReactNode }) {
           <UserNav />
         </Suspense>
       </aside>
-      <div className="flex min-w-0 flex-1 flex-col">{children}</div>
+      <main id="main" tabIndex={-1} className="flex min-w-0 flex-1 flex-col outline-none">
+        {children}
+      </main>
       {/* Reads the URL, which is only known per request. */}
       <Suspense>
         <SessionTimeoutWarning />
@@ -52,7 +61,7 @@ async function UserNav() {
 
   return (
     <nav aria-label={t("main")} className="flex flex-col gap-2 px-2 pb-3 md:gap-6">
-      <NavLinks items={items} className="overflow-x-auto md:flex-col" />
+      <NavLinks items={items} className="flex-wrap md:flex-col" />
       <div className="hidden px-3 text-xs text-muted-foreground md:block">
         <p className="mb-2">{t("signedInAs", { name: user.name, role: r(user.role) })}</p>
         <SignOutButton />

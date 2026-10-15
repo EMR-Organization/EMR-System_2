@@ -6,20 +6,23 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { orSignIn } from "@/server/page";
 import { listConflicts } from "@/server/services/sync";
+import { titled } from "@/app/page-title";
+
+export const generateMetadata = titled("Sync", "queueTitle");
 
 // Records edited both on the hub and on a fallback laptop while it was in use.
 // Doctors and admins pick, field by field, which version to keep (past trips:
 // admins only). Importing the laptop's bundle is on the admin Sync page.
 export default function ConflictsPage({ searchParams }: Pick<PageProps<"/conflicts">, "searchParams">) {
   return (
-    <main className="mx-auto grid w-full grid-cols-[minmax(0,1fr)] max-w-4xl gap-6 px-4 py-6 md:py-8">
+    <div className="mx-auto grid w-full grid-cols-[minmax(0,1fr)] max-w-4xl gap-6 px-4 py-6 md:py-8">
       <Suspense>
         <Resolved searchParams={searchParams} />
       </Suspense>
       <Suspense>
         <Queue />
       </Suspense>
-    </main>
+    </div>
   );
 }
 
