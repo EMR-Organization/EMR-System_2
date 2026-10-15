@@ -12,6 +12,7 @@ One Windows laptop (the hub) runs the database, the app and an HTTPS server (Cad
 | --- | --- |
 | Someone on the Wi-Fi reads traffic | HTTPS everywhere (TLS by Caddy, HSTS). Cookies are `Secure`, `HttpOnly`, `SameSite=Strict`. |
 | A stolen laptop | BitLocker (setup checks it). Secrets and data folders readable by the EMR's Windows account only; backups encrypted (AES-256-GCM) with a key kept off the laptop. |
+| Losing the hub and its USB backup together | Optional [offsite backups](offsite-backups.md): the same encrypted files, uploaded when the hub has internet, checked against their signed SHA-256 before and on arrival, never overwritten. The hub's storage key can only upload, and object lock stops anyone deleting the copies. The storage provider never has `BACKUP_KEY`. |
 | A stolen hub used to fake websites to phones | The hub's certificate authority can only vouch for local names and private addresses, only for TLS; its root key is destroyed at setup. |
 | Password guessing | argon2id hashes; 5 wrong passwords lock an account for 15 minutes (counted atomically, so parallel guesses don't get more tries); per-address rate limits. |
 | A student or doctor doing more than their role allows | Permission check in every service on every call, against the database (not the screen). Students only on trips a doctor switched them on for. Past trips read-only except for admins. |

@@ -23,6 +23,7 @@
     "create-admin": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/create-admin.ts",
     "audit:checkpoint": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/audit-checkpoint.ts",
     "backup": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/backup.ts",
+    "backup:offsite": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/backup-offsite.ts",
     "restore": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/restore.ts",
     "import-legacy": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/import-legacy.ts",
     "provision-node": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/provision-node.ts",
@@ -30,6 +31,7 @@
     "export-bundle": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/export-bundle.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.1141.0",
     "@base-ui/react": "^1.9.0",
     "@hookform/resolvers": "^5.9.1",
     "@node-rs/argon2": "^2.2.2",

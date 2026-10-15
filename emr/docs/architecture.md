@@ -148,7 +148,8 @@ The `tripId` passed to `assertCan` always comes from the record in the database,
 | --- | --- | --- |
 | `listAudit`, `listAuditUsers` | `audit.read` | The audit log, filterable by user, action, patient and date. |
 | `verifyAuditChain` | `audit.read` | Recomputes the whole hash chain. Given a checkpoint (from a backup or a printout), it also checks that this entry is still there with the same hash. |
-| `listBackups`, `runBackup` | `backup.run` | Lists backups and makes one now. |
+| `listBackups`, `runBackup` | `backup.run` | Lists backups (with when each was copied offsite) and makes one now. |
+| `offsiteSettings`, `runOffsiteUpload` | `backup.run` | Whether offsite copies are set up and where they go (never the keys); "Copy offsite now". |
 | `backupForDownload` | `backup.run` | The encrypted backup file, for copying to USB. Audited. |
 
 ### Building blocks in `src/server/`
@@ -175,6 +176,7 @@ The `tripId` passed to `assertCan` always comes from the record in the database,
 | `trip-data.ts` | Builds and merges trip data files (used by export, import and the legacy import). |
 | `legacy-import.ts` | Maps the old Streamlit `emr_data/` folder into the new tables. Safe to run again. |
 | `backup.ts`, `restore.ts` | Encrypted `.hfbak` backups (database dump plus photos), kept 14 days. Restore goes into a **new** database and is checked before anything is swapped in. |
+| `offsite.ts` | Uploads backups (still encrypted) to an S3-compatible bucket. Each file is checked against its signed SHA-256 first, the storage checks it again on arrival, and an existing copy is never overwritten. Uploads are recorded in the audit log. See [offsite-backups.md](offsite-backups.md). |
 | `sealed.ts` | `seal`/`unseal`: AES-256-GCM files keyed from `SYNC_KEY`, with a purpose byte, so a provisioning file can't be imported as a sync bundle or the other way round. |
 | `sync/provision.ts` | The hub writes doctor and student accounts, trips and memberships for fallback laptops. **No admin accounts are included.** |
 | `sync/export.ts` | On a fallback laptop: every record changed since a given time, with photos and audit entries, as an encrypted bundle. |
@@ -341,6 +343,7 @@ Importing the same bundle twice changes nothing.
 | **The hub's own certificate authority, limited to local names and private IPs; its root key destroyed at setup** | Phones get real HTTPS, but a stolen hub can't impersonate internet sites. |
 | **Secrets generated per laptop; production refuses placeholder secrets** | No shared default keys. A forgotten `.env.example` value stops the server instead of running insecurely. |
 | **Backups and sync files are AES-256-GCM, with a key check and a purpose byte; restore goes into a new database and is verified before the swap** | A stolen USB stick is useless, a wrong key is detected, and a bad restore can't destroy live data. |
+| **Offsite copies are the already-encrypted files, sent with an upload-only key, never overwritten, with object lock on the bucket** | A lost hub plus its USB stick no longer means lost records, and the storage company can't read anything. A stolen hub's key can't delete or replace the offsite copies. |
 | **Fallback laptops get no admin accounts; only admins import bundles** | Limits what a stolen fallback is worth. |
 | **Past trips read-only except for admins** | Closed trips can't be changed by accident. |
 | **No `"use cache"`** | A shared cache could serve one user's data to another. |
@@ -356,6 +359,7 @@ The accepted risks (no email verification, password hashes on fallback laptops, 
 - [ ] Decide between the travel router and a phone hotspot (check whether the hotspot isolates clients).
 - [ ] Confirm the hub's Windows version and whether we have admin rights (renaming the PC, the firewall rule and the BitLocker check need them).
 - [ ] Choose the first and backup admins. Keep `BACKUP_KEY` and `AUDIT_KEY` somewhere other than the hub.
+- [ ] Choose a storage provider and set up [offsite backups](offsite-backups.md) (a private bucket with object lock, and an upload-only key). Check with HFSO which provider and region are acceptable.
 - [ ] Turn on BitLocker on the hub and every fallback laptop.
 - [ ] Test VoiceOver (iPhone), TalkBack (Android), and readability in sunlight on real phones.
 - [ ] Have a native Spanish speaker with clinical experience check `messages/es.json`.
@@ -367,6 +371,6 @@ The accepted risks (no email verification, password hashes on fallback laptops, 
 - [ ] Email verification and emailed reset codes, if the EMR ever runs with internet access.
 - [ ] Two-factor sign-in for admins. Text-message and email codes can't work offline, but hardware security keys (WebAuthn) or an authenticator app would.
 - [ ] Automatic audit-checkpoint export (e.g. printed daily, or to USB) instead of relying on backups and the CLI.
-- [ ] A between-trips home for the data (where the hub's database lives when not travelling, who holds the keys, retention), which is a policy decision. A cloud copy would need a new design (internet-facing auth, TLS from a real certificate authority, data-protection agreements).
+- [ ] A between-trips home for the data (where the hub's database lives when not travelling, who holds the keys, retention), which is a policy decision. Offsite backups cover disaster recovery. A live cloud copy that people use would need a new design (internet-facing auth, TLS from a real certificate authority, data-protection agreements).
 - [ ] Dark mode tokens exist but are never applied. If it's turned on, re-run the accessibility scan, because contrast was only tuned for light mode.
 - [ ] Update dependencies before each trip (`npm run audit:runtime` in CI flags high and critical advisories) and rebuild the Windows bundle.

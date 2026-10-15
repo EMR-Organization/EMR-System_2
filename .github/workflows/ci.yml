@@ -29,6 +29,15 @@ jobs:
           --health-cmd "pg_isready -U emr_owner -d emr"
           --health-interval 5s
           --health-retries 10
+      # An S3-compatible server for the offsite backup tests (tests/integration/offsite.test.ts).
+      s3:
+        image: versity/versitygw:v1.8.0
+        env:
+          ROOT_ACCESS_KEY_ID: ci-offsite-access
+          ROOT_SECRET_ACCESS_KEY: ci-offsite-secret-not-for-real-use
+          VGW_BACKEND: posix
+          VGW_BACKEND_ARG: /tmp
+        ports: ["9100:7070"]
     env:
       # The app and tests connect as the restricted role; migrations as the owner.
       DATABASE_URL: postgresql://emr_app:emr_app_ci_password@localhost:5432/emr
@@ -40,6 +49,9 @@ jobs:
       TRUST_PROXY: "1"
       ALLOWED_EMAIL_DOMAINS: example.org
       NODE_ID: ci
+      OFFSITE_TEST_ENDPOINT: http://127.0.0.1:9100
+      OFFSITE_TEST_ACCESS_KEY_ID: ci-offsite-access
+      OFFSITE_TEST_SECRET_ACCESS_KEY: ci-offsite-secret-not-for-real-use
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

@@ -16,6 +16,7 @@ export const TOOLS = [
   "create-admin",
   "audit-checkpoint",
   "backup",
+  "backup-offsite",
   "restore",
   "provision-node",
   "load-provision",

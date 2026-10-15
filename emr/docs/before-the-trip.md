@@ -35,6 +35,7 @@ Then:
 2. Run `start-hub.bat`. Its window shows the address and a QR code.
 3. Sign in as the first admin and create the trip (Trips → New trip).
 4. Create the backup admin: with the EMR running, the backup admin runs `emr-tool.bat create-admin` on the hub and types their own name, email and password. (Admin accounts can only be made this way, at the hub itself; nobody can register as an admin.)
+5. Recommended: set up [offsite backups](offsite-backups.md), so a hub lost together with its USB stick doesn't mean lost records. Test it while the hub still has internet.
 
 ## 5. Accounts
 

@@ -101,7 +101,8 @@
     "syncInvalid": "El contenido del paquete no es válido. No se importó nada.",
     "syncOwnNode": "Ese paquete se hizo en este hub. Importe paquetes de las laptops de respaldo.",
     "syncResolved": "Alguien ya resolvió este conflicto.",
-    "syncChanged": "El registro cambió en el hub después de que abrió esto. Recargue para ver los valores actuales y elija de nuevo."
+    "syncChanged": "El registro cambió en el hub después de que abrió esto. Recargue para ver los valores actuales y elija de nuevo.",
+    "offsiteNotSetUp": "Las copias fuera del sitio no están configuradas en este hub."
   },
   "Login": {
     "title": "Iniciar sesión",
@@ -547,7 +548,17 @@
     "keepSafeTitle": "Cómo proteger las copias",
     "keepSafeUsb": "Al final de cada día de clínica, copie la copia más reciente (los archivos .hfbak y .json de la carpeta de copias, o use Descargar) en una memoria USB que se lleve otra persona, no quien lleva el hub.",
     "keepSafeKeys": "Una copia solo se puede abrir con la BACKUP_KEY y la AUDIT_KEY de la instalación. Guarde una copia de ambas lejos del hub; si no, perder el hub significa perder las copias.",
-    "restoreHow": "La restauración se hace en el hub, desde una terminal:"
+    "restoreHow": "La restauración se hace en el hub, desde una terminal:",
+    "offsiteTitle": "Copias fuera del sitio",
+    "offsiteOn": "Las copias también se envían fuera del sitio, todavía cifradas, siempre que el hub tenga internet: después de cada copia nocturna o con el botón de abajo. La empresa de almacenamiento no puede leerlas; solo la BACKUP_KEY las abre.",
+    "offsiteWhere": "Las copias van a",
+    "offsiteOff": "Las copias fuera del sitio no están configuradas, así que la memoria USB es la única copia lejos del hub. Quien instaló el hub puede activarlas (docs/offsite-backups.md).",
+    "offsiteNow": "Enviar fuera del sitio ahora",
+    "offsiteRunning": "Enviando fuera del sitio…",
+    "offsiteDone": "{count, plural, =0 {Todas las copias ya estaban fuera del sitio.} one {# copia enviada fuera del sitio.} other {# copias enviadas fuera del sitio.}}",
+    "offsiteFailed": "No se pudo terminar el envío fuera del sitio (¿sin internet?). Se intentará de nuevo después de la próxima copia.",
+    "offsiteAt": "Fuera del sitio desde {when}",
+    "offsiteNotYet": "Todavía no está fuera del sitio"
   },
   "Audit": {
     "title": "Registro de auditoría",

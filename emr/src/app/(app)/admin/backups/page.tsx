@@ -3,8 +3,8 @@ import { Suspense } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { orSignIn } from "@/server/page";
-import { listBackups } from "@/server/services/backups";
-import { BackupNowButton } from "./backup-now";
+import { listBackups, offsiteSettings } from "@/server/services/backups";
+import { BackupNowButton, OffsiteNowButton } from "./backup-now";
 import { titled } from "@/app/page-title";
 
 export const generateMetadata = titled("Backups");
@@ -23,6 +23,9 @@ export default async function BackupsPage() {
       </div>
       <Suspense fallback={<p className="text-muted-foreground">{c("loading")}</p>}>
         <BackupList />
+      </Suspense>
+      <Suspense>
+        <Offsite />
       </Suspense>
       <Card>
         <CardHeader>
@@ -45,7 +48,7 @@ export default async function BackupsPage() {
 async function BackupList() {
   const t = await getTranslations("Backups");
   const format = await getFormatter();
-  const backups = await orSignIn(() => listBackups());
+  const [backups, offsite] = await orSignIn(() => Promise.all([listBackups(), offsiteSettings()]));
   return (
     <Card>
       <CardHeader>
@@ -68,6 +71,11 @@ async function BackupList() {
                     {t("details", { patients: b.counts.patients, photos: b.counts.photos, size: (b.sizeBytes / 1024 / 1024).toFixed(1) })}
                     {b.checkpoint && ` · ${t("checkpoint", { id: b.checkpoint.id })}`}
                   </span>
+                  {offsite.configured && (
+                    <span className="text-xs text-muted-foreground">
+                      {b.offsiteAt ? t("offsiteAt", { when: format.dateTime(b.offsiteAt, { dateStyle: "medium", timeStyle: "short" }) }) : t("offsiteNotYet")}
+                    </span>
+                  )}
                 </span>
                 {/* A plain link: it's a file download, not a page. */}
                 <a href={`/api/backups/${b.name}`} className="underline pointer-coarse:inline-block pointer-coarse:py-2.5" download>
@@ -76,6 +84,35 @@ async function BackupList() {
               </li>
             ))}
           </ul>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+async function Offsite() {
+  const t = await getTranslations("Backups");
+  const offsite = await orSignIn(() => offsiteSettings());
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>
+          <h2>{t("offsiteTitle")}</h2>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="grid gap-3 text-sm">
+        {offsite.configured ? (
+          <>
+            <p>{t("offsiteOn")}</p>
+            <p className="text-xs text-muted-foreground">
+              {t("offsiteWhere")} <code className="rounded bg-muted px-1 break-all text-foreground">{offsite.label}</code>
+            </p>
+            <div>
+              <OffsiteNowButton />
+            </div>
+          </>
+        ) : (
+          <p>{t("offsiteOff")}</p>
         )}
       </CardContent>
     </Card>

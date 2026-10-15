@@ -2,7 +2,7 @@
 #   emr-tool.bat provision-node            (hub: accounts for the fallback laptops)
 #   emr-tool.bat load-provision E:\x.hfprov --first-number 5001   (fallback)
 #   emr-tool.bat export-bundle             (fallback, when the hub is back)
-#   emr-tool.bat create-admin | audit-checkpoint | backup | restore <file> [--swap]
+#   emr-tool.bat create-admin | audit-checkpoint | backup | backup-offsite | restore <file> [--swap]
 # Works with the EMR running or stopped: if the database isn't running, it is
 # started just for the tool and stopped again afterwards. restore --swap needs
 # the EMR stopped (stop.bat), since it replaces the database the app is using.
@@ -13,7 +13,7 @@ if ($args.Count -gt 0) { $Name = [string]$args[0] }
 if ($args.Count -gt 1) { $Rest = @($args[1..($args.Count - 1)] | ForEach-Object { [string]$_ }) }
 
 . (Join-Path $PSScriptRoot 'common.ps1')
-$allowed = @('provision-node', 'load-provision', 'export-bundle', 'create-admin', 'audit-checkpoint', 'backup', 'restore', 'import-legacy')
+$allowed = @('provision-node', 'load-provision', 'export-bundle', 'create-admin', 'audit-checkpoint', 'backup', 'backup-offsite', 'restore', 'import-legacy')
 if (-not $Name -or $allowed -notcontains $Name) {
     Write-Host "Usage: emr-tool.bat <tool> [arguments]"
     Write-Host "Tools: $($allowed -join ', ')"
