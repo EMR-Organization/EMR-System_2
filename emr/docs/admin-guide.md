@@ -12,6 +12,7 @@ Admins approve accounts, look after the hub, its backups and the fallback laptop
 
 1. Admin → **Backups** → **Back up now** (one is also made every night at 02:00 while the EMR runs).
 2. Copy the newest file from `C:\EMR\data\backups` to the USB stick that lives with the trip lead, never in the same bag as the laptop. Backups are encrypted; they're useless without the keys file from setup, which is kept somewhere else again.
+   - If [offsite backups](offsite-backups.md) are set up, Admin → Backups shows which backups are already offsite. When the hub has internet, **Copy offsite now** sends the rest.
 3. To stop for the night: `stop.bat` (or leave it running so the 02:00 backup happens).
 
 ## Approving accounts

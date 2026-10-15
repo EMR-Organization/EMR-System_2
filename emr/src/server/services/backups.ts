@@ -3,7 +3,8 @@ import { z } from "zod";
 import { auditOnly } from "@/server/audit";
 import { requireUser } from "@/server/auth/session";
 import { backupFilePath, createBackup, listBackupSummaries, type BackupSummary } from "@/server/backup";
-import { NotFoundError } from "@/server/errors";
+import { NotFoundError, ValidationError } from "@/server/errors";
+import { offsiteTarget, offsiteUploads, uploadBackupsOffsite, type OffsiteResult } from "@/server/offsite";
 import { assertCan } from "@/server/rbac";
 import { parse } from "@/server/validation";
 
@@ -11,10 +12,31 @@ import { parse } from "@/server/validation";
 // scripts/backup.ts (scheduled by the field setup); restoring is a command-line
 // job (scripts/restore.ts) because it replaces the database.
 
-export async function listBackups(): Promise<BackupSummary[]> {
+export type BackupListItem = BackupSummary & { offsiteAt: Date | null };
+
+/** Backups on this laptop, newest first, with when each was copied offsite (if offsite backups are set up). */
+export async function listBackups(): Promise<BackupListItem[]> {
   const actor = await requireUser();
   await assertCan(actor, "backup.run");
-  return listBackupSummaries();
+  const target = offsiteTarget();
+  const [backups, uploads] = await Promise.all([listBackupSummaries(), target ? offsiteUploads(target) : new Map<string, Date>()]);
+  return backups.map((b) => ({ ...b, offsiteAt: uploads.get(b.name) ?? null }));
+}
+
+/** Whether offsite copies are set up, and where they go (bucket and folder; never the keys). */
+export async function offsiteSettings(): Promise<{ configured: boolean; label: string | null }> {
+  const actor = await requireUser();
+  await assertCan(actor, "backup.run");
+  const target = offsiteTarget();
+  return { configured: target !== null, label: target?.label ?? null };
+}
+
+/** "Copy offsite now", for when the hub happens to have internet. The nightly job does the same. */
+export async function runOffsiteUpload(): Promise<OffsiteResult[]> {
+  const actor = await requireUser();
+  await assertCan(actor, "backup.run");
+  if (!offsiteTarget()) throw new ValidationError({}, "offsiteNotSetUp");
+  return uploadBackupsOffsite(actor);
 }
 
 export async function runBackup(): Promise<BackupSummary> {

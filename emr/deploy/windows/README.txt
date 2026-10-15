@@ -32,6 +32,9 @@ BACKUPS
   files go to data\backups (kept 14 days). Copy them to a USB stick at the end
   of each clinic day. Check one: emr-tool.bat restore <file.hfbak> (into a new
   database). To switch to it: stop.bat, then emr-tool.bat restore <file> --swap
+  Offsite copies (optional, still encrypted): add the OFFSITE_ settings to
+  config\emr.env (see docs/offsite-backups.md). Then each nightly backup is also
+  uploaded whenever the hub has internet; emr-tool.bat backup-offsite any time.
 
 UPDATING
   Stop the EMR, replace everything EXCEPT config\ and data\, start it again.

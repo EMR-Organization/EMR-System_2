@@ -62,7 +62,43 @@ const schema = z.object({
     .enum(["0", "1"])
     .default("0")
     .transform((v) => v === "1"),
+  /**
+   * Offsite copies of the (already encrypted) backups, in any S3-compatible
+   * bucket: AWS S3, Backblaze B2, Cloudflare R2, MinIO... All optional; set
+   * OFFSITE_BUCKET and the two keys to turn it on. Use keys that may only
+   * upload (no read, no delete), so a stolen hub can't remove the copies.
+   */
+  OFFSITE_BUCKET: optional(z.string().regex(/^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/, "OFFSITE_BUCKET is not a valid bucket name")),
+  /** Leave empty for AWS S3; otherwise the provider's S3 endpoint. HTTPS only (except on this computer, for tests). */
+  OFFSITE_ENDPOINT: optional(
+    z
+      .string()
+      .url()
+      .refine((value) => {
+        const url = new URL(value);
+        return url.protocol === "https:" || ["127.0.0.1", "localhost", "[::1]"].includes(url.hostname);
+      }, "OFFSITE_ENDPOINT must be an https:// address"),
+  ),
+  OFFSITE_REGION: optional(z.string().regex(/^[a-z0-9-]{2,32}$/, "OFFSITE_REGION is not a valid region")).transform((v) => v ?? "us-east-1"),
+  /** Folder inside the bucket, e.g. "hub-guatemala/". */
+  OFFSITE_PREFIX: optional(z.string().regex(/^[A-Za-z0-9._-]+(\/[A-Za-z0-9._-]+)*\/?$/, "OFFSITE_PREFIX may contain letters, digits, . _ - and /"))
+    .transform((v) => (v ? v.replace(/\/?$/, "/") : "")),
+  OFFSITE_ACCESS_KEY_ID: optional(z.string().max(256)),
+  OFFSITE_SECRET_ACCESS_KEY: optional(z.string().max(256)),
+}).superRefine((value, ctx) => {
+  const keys = [value.OFFSITE_ACCESS_KEY_ID, value.OFFSITE_SECRET_ACCESS_KEY];
+  if (value.OFFSITE_BUCKET && keys.some((k) => !k)) {
+    ctx.addIssue({ code: "custom", path: ["OFFSITE_ACCESS_KEY_ID"], message: "offsite backups need OFFSITE_ACCESS_KEY_ID and OFFSITE_SECRET_ACCESS_KEY" });
+  }
+  if (!value.OFFSITE_BUCKET && (keys.some(Boolean) || value.OFFSITE_ENDPOINT)) {
+    ctx.addIssue({ code: "custom", path: ["OFFSITE_BUCKET"], message: "offsite settings are set but OFFSITE_BUCKET is missing" });
+  }
 });
+
+/** An unset or empty ("") variable counts as not set. */
+function optional<T extends z.ZodType>(schema: T) {
+  return z.preprocess((v) => (v === "" ? undefined : v), schema.optional());
+}
 
 export type Env = z.infer<typeof schema>;
 

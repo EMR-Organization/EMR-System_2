@@ -44,6 +44,7 @@ docker run -d --name emr-dev-db -e POSTGRES_USER=emr_owner -e POSTGRES_PASSWORD=
 | `npm run db:reset` | Drop everything, re-migrate, re-enable the app role, re-seed |
 | `npm run audit:checkpoint` | Verifies the audit log and prints a checkpoint to keep outside the database (`-- <id> <hash>` checks against an earlier one) |
 | `npm run backup` | Encrypted backup (database + photos) to `BACKUP_DIR`, keeps 14 days. Needs `pg_dump` 16 on `PATH` or in `PG_BIN_DIR` |
+| `npm run backup:offsite` | Uploads backups that aren't offsite yet (still encrypted) to the S3-compatible bucket in `OFFSITE_*` ([docs](docs/offsite-backups.md)) |
 | `npm run restore -- <file.hfbak>` | Restores into a **new** database and verifies it; nothing live changes. Add `--swap` (app stopped) to put it in place; the old database and photos are kept aside |
 | `npm run import-legacy -- <emr_data> [--root-trip MM_YYYY] [--dry-run]` | Imports the old Streamlit app's data folder. Safe to re-run (skips what's already imported) |
 | `npm run provision-node` | **Hub**, before the trip: encrypted file of accounts (password hashes), trips and memberships for fallback laptops |

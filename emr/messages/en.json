@@ -101,7 +101,8 @@
     "syncInvalid": "The bundle's contents aren't valid. Nothing was imported.",
     "syncOwnNode": "That bundle was made on this hub. Import bundles from fallback laptops.",
     "syncResolved": "Someone already resolved this conflict.",
-    "syncChanged": "The record changed on the hub after you opened this. Reload to see the current values, then choose again."
+    "syncChanged": "The record changed on the hub after you opened this. Reload to see the current values, then choose again.",
+    "offsiteNotSetUp": "Offsite copies aren't set up on this hub."
   },
   "Login": {
     "title": "Sign in",
@@ -547,7 +548,17 @@
     "keepSafeTitle": "Keeping backups safe",
     "keepSafeUsb": "At the end of each clinic day, copy the newest backup (the .hfbak and .json files in the backups folder, or use Download) to a USB stick that leaves with someone other than the hub.",
     "keepSafeKeys": "A backup can only be opened with the BACKUP_KEY and AUDIT_KEY from setup. Keep a copy of both away from the hub, or a lost hub means lost backups.",
-    "restoreHow": "Restoring is done on the hub, from a terminal:"
+    "restoreHow": "Restoring is done on the hub, from a terminal:",
+    "offsiteTitle": "Offsite copies",
+    "offsiteOn": "Backups are also copied offsite, still encrypted, whenever the hub has internet: after each nightly backup, or with the button below. The storage company can't read them; only BACKUP_KEY opens them.",
+    "offsiteWhere": "Copies go to",
+    "offsiteOff": "Offsite copies aren't set up, so the USB stick is the only copy away from the hub. Whoever set up the hub can turn them on (docs/offsite-backups.md).",
+    "offsiteNow": "Copy offsite now",
+    "offsiteRunning": "Copying offsite…",
+    "offsiteDone": "{count, plural, =0 {Every backup was already offsite.} one {# backup copied offsite.} other {# backups copied offsite.}}",
+    "offsiteFailed": "Couldn't finish copying offsite (no internet?). It will be tried again after the next backup.",
+    "offsiteAt": "Offsite since {when}",
+    "offsiteNotYet": "Not offsite yet"
   },
   "Audit": {
     "title": "Audit log",

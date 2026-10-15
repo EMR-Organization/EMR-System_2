@@ -21,3 +21,18 @@ $ErrorActionPreference = 'Stop'
 $output | ForEach-Object { "$_" } | Add-Content -LiteralPath $log -Encoding ASCII
 if (-not $Scheduled) { $output | ForEach-Object { Write-Host "$_" } }
 if ($code -ne 0) { Stop-WithError "Backup failed. See $log." }
+
+# Offsite copy (only when OFFSITE_BUCKET is set up). Needs internet, which the hub
+# usually doesn't have: a failure is logged and the next run carries on, and it
+# never makes the backup itself count as failed.
+$offsite = Join-Path $P.Tools 'backup-offsite.mjs'
+$ErrorActionPreference = 'Continue'
+$output = & $P.Node $offsite --if-configured 2>&1
+$offsiteCode = $LASTEXITCODE
+$ErrorActionPreference = 'Stop'
+$output | ForEach-Object { "$_" } | Add-Content -LiteralPath $log -Encoding ASCII
+if (-not $Scheduled) {
+    $output | ForEach-Object { Write-Host "$_" }
+    if ($offsiteCode -ne 0) { Write-Warn "The backup is saved, but the offsite copy didn't finish (no internet?). It will be tried again after the next backup, or run: emr-tool.bat backup-offsite" }
+}
+exit 0
