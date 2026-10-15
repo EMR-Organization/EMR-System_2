@@ -9,6 +9,7 @@ For the people who run the EMR on a trip. Developer setup is in `../README.md`.
 | [Admin guide](admin-guide.md) | Admins | Every clinic day |
 | [Field drill](field-drill.md) | Trip lead + 2 helpers | Once before every trip |
 | [Security notes](security.md) | Trip lead, whoever maintains the code | Read once |
+| [How the EMR works](architecture.md) | Developers and maintainers | Before changing code |
 
 The short version printed in the field folder itself is `deploy/windows/README.txt` (it ships as `C:\EMR\README.txt`).
 
