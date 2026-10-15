@@ -115,6 +115,9 @@ set -a; . ./.env.e2e.local;  set +a; npx prisma migrate deploy && npx prisma db 
 
 ## Auth in one paragraph
 
+The full tour (every service function, auth, frontend, security decisions, what's left) is in [`docs/architecture.md`](docs/architecture.md).
+
+
 Services are the only way in. Each starts with `requireUser()` (`src/server/auth/session.ts`), which re-reads the session and user from the database on every request and enforces the 30-minute idle and 12-hour absolute limits. Then `assertCan()` (`src/server/rbac.ts`) applies the permission matrix in `src/lib/shared/permissions.ts`, including the per-trip student switch. Writes and their audit entry (`src/server/audit.ts`) share one transaction. Better Auth only manages session rows and the cookie; its HTTP endpoints are deliberately not mounted. `tests/unit/route-guard.test.ts` fails CI if an exported service doesn't call `requireUser()` first.
 
 ## UI text
