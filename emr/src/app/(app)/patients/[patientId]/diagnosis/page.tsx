@@ -6,6 +6,9 @@ import { orSignIn } from "@/server/page";
 import { getTripVisit } from "@/server/services/visits";
 import { loadPatient, loadPermissions } from "../data";
 import { DiagnosisForm } from "../doctor-forms";
+import { titled } from "@/app/page-title";
+
+export const generateMetadata = titled("Patient", "diagnosisTab");
 
 type Props = PageProps<"/patients/[patientId]/diagnosis">;
 

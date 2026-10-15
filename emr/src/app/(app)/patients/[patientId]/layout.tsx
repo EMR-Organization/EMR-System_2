@@ -46,7 +46,7 @@ async function PatientHeader({ params }: Pick<Props, "params">) {
   return (
     <header className="grid grid-cols-[minmax(0,1fr)] gap-3">
       <div className="grid gap-1">
-        <Link href={`/trips/${p.tripId}/patients`} className="text-sm text-muted-foreground hover:underline">
+        <Link href={`/trips/${p.tripId}/patients`} className="text-sm text-muted-foreground hover:underline pointer-coarse:inline-block pointer-coarse:py-2.5">
           {p.tripName}
         </Link>
         <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight">
@@ -64,7 +64,7 @@ async function PatientHeader({ params }: Pick<Props, "params">) {
       </div>
       {!p.tripActive && <p className="rounded-lg border border-dashed px-3 py-2 text-sm text-muted-foreground">{tt("closedNotice")}</p>}
       <nav aria-label={t("details")} className="border-b pb-2">
-        <NavLinks items={tabs} exactFirst className="overflow-x-auto" />
+        <NavLinks items={tabs} exactFirst className="flex-wrap" />
       </nav>
     </header>
   );

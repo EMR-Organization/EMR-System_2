@@ -9,17 +9,20 @@ import { orSignIn } from "@/server/page";
 import { listTrips } from "@/server/services/trips";
 import { me } from "@/server/services/users";
 import { CreateTripForm, TripActiveButton } from "./trip-forms";
+import { titled } from "@/app/page-title";
+
+export const generateMetadata = titled("Trips");
 
 export default async function TripsPage() {
   const t = await getTranslations("Trips");
   const c = await getTranslations("Common");
   return (
-    <main className="mx-auto grid w-full grid-cols-[minmax(0,1fr)] max-w-4xl gap-6 px-4 py-6 md:py-8">
+    <div className="mx-auto grid w-full grid-cols-[minmax(0,1fr)] max-w-4xl gap-6 px-4 py-6 md:py-8">
       <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
       <Suspense fallback={<p className="text-muted-foreground">{c("loading")}</p>}>
         <TripList />
       </Suspense>
-    </main>
+    </div>
   );
 }
 
@@ -40,7 +43,7 @@ async function TripList() {
               <Card className="h-full">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between gap-2">
-                    <Link href={`/trips/${trip.id}`} className="hover:underline">
+                    <Link href={`/trips/${trip.id}`} className="hover:underline pointer-coarse:inline-block pointer-coarse:py-2.5">
                       {trip.name}
                     </Link>
                     <Badge variant={trip.active ? "default" : "secondary"}>{trip.active ? t("current") : t("past")}</Badge>

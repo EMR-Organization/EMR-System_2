@@ -6,6 +6,9 @@ import { localDay } from "@/lib/shared/dates";
 import { orSignIn } from "@/server/page";
 import { myPermissions } from "@/server/services/users";
 import { RegisterPatientForm } from "./register-form";
+import { titled } from "@/app/page-title";
+
+export const generateMetadata = titled("PatientForm", "registerTitle");
 
 export default function NewPatientPage({ params }: PageProps<"/trips/[tripId]/patients/new">) {
   return (

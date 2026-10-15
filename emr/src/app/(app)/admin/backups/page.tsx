@@ -5,12 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { orSignIn } from "@/server/page";
 import { listBackups } from "@/server/services/backups";
 import { BackupNowButton } from "./backup-now";
+import { titled } from "@/app/page-title";
+
+export const generateMetadata = titled("Backups");
 
 export default async function BackupsPage() {
   const t = await getTranslations("Backups");
   const c = await getTranslations("Common");
   return (
-    <main className="mx-auto grid w-full grid-cols-[minmax(0,1fr)] max-w-4xl gap-6 px-4 py-6 md:py-8">
+    <div className="mx-auto grid w-full grid-cols-[minmax(0,1fr)] max-w-4xl gap-6 px-4 py-6 md:py-8">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
@@ -35,7 +38,7 @@ export default async function BackupsPage() {
           </p>
         </CardContent>
       </Card>
-    </main>
+    </div>
   );
 }
 
@@ -67,7 +70,7 @@ async function BackupList() {
                   </span>
                 </span>
                 {/* A plain link: it's a file download, not a page. */}
-                <a href={`/api/backups/${b.name}`} className="underline" download>
+                <a href={`/api/backups/${b.name}`} className="underline pointer-coarse:inline-block pointer-coarse:py-2.5" download>
                   {t("download")}
                 </a>
               </li>

@@ -9,6 +9,9 @@ import { orSignIn } from "@/server/page";
 import { listAudit, listAuditUsers } from "@/server/services/audit";
 import { listBackups } from "@/server/services/backups";
 import { VerifyForm } from "./verify-form";
+import { titled } from "@/app/page-title";
+
+export const generateMetadata = titled("Audit");
 
 type Props = Pick<PageProps<"/admin/audit">, "searchParams">;
 
@@ -18,7 +21,7 @@ export default async function AuditPage({ searchParams }: Props) {
   const t = await getTranslations("Audit");
   const c = await getTranslations("Common");
   return (
-    <main className="mx-auto grid w-full grid-cols-[minmax(0,1fr)] max-w-5xl gap-6 px-4 py-6 md:py-8">
+    <div className="mx-auto grid w-full grid-cols-[minmax(0,1fr)] max-w-5xl gap-6 px-4 py-6 md:py-8">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
         <p className="text-sm text-muted-foreground">{t("intro")}</p>
@@ -29,7 +32,7 @@ export default async function AuditPage({ searchParams }: Props) {
       <Suspense fallback={<p className="text-muted-foreground">{c("loading")}</p>}>
         <Log searchParams={searchParams} />
       </Suspense>
-    </main>
+    </div>
   );
 }
 
@@ -82,7 +85,7 @@ async function Log({ searchParams }: Props) {
         <form className="grid gap-3 sm:grid-cols-3" aria-label={t("filters")}>
           <label className="grid gap-1 text-sm">
             {t("user")}
-            <select name="userId" defaultValue={filter.userId} className="h-8 rounded-lg border bg-background px-2 text-sm">
+            <select name="userId" defaultValue={filter.userId} className="h-8 pointer-coarse:h-10 rounded-lg border bg-background px-2 text-sm">
               <option value="">{t("anyone")}</option>
               {users.map((u) => (
                 <option key={u.id} value={u.id}>
@@ -146,7 +149,7 @@ async function Log({ searchParams }: Props) {
                     {typeof patientId === "string" && (
                       <>
                         {" · "}
-                        <Link href={`/patients/${patientId}`} prefetch={false} className="underline">
+                        <Link href={`/patients/${patientId}`} prefetch={false} className="underline pointer-coarse:inline-block pointer-coarse:py-3">
                           {t("openPatient")}
                         </Link>
                       </>

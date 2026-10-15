@@ -37,7 +37,7 @@ export function VerifyForm({ checkpoints }: { checkpoints: CheckpointOption[] })
           </label>
           <select
             id="checkpoint-pick"
-            className="h-8 rounded-lg border bg-background px-2 text-sm"
+            className="h-8 pointer-coarse:h-10 rounded-lg border bg-background px-2 text-sm"
             defaultValue=""
             onChange={(e) => setCheckpoint(checkpoints.find((c) => c.id === e.target.value) ?? { id: "", hash: "" })}
           >

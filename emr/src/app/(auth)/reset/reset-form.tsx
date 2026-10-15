@@ -15,7 +15,7 @@ export function ResetForm() {
     return (
       <div className="grid gap-4">
         <FormSuccess>{t("done")}</FormSuccess>
-        <Link className="text-sm text-primary underline-offset-4 hover:underline" href="/login">
+        <Link className="text-sm text-primary underline underline-offset-4 pointer-coarse:inline-block pointer-coarse:py-2.5" href="/login">
           {t("back")}
         </Link>
       </div>
@@ -32,7 +32,7 @@ export function ResetForm() {
       <Button type="submit" disabled={pending}>
         {t("submit")}
       </Button>
-      <Link className="text-sm text-primary underline-offset-4 hover:underline" href="/login">
+      <Link className="text-sm text-primary underline underline-offset-4 pointer-coarse:inline-block pointer-coarse:py-2.5" href="/login">
         {t("back")}
       </Link>
     </form>

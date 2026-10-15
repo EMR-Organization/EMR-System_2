@@ -7,6 +7,9 @@ import { localDay } from "@/lib/shared/dates";
 import { orSignIn } from "@/server/page";
 import { loadPatient, loadPermissions } from "./data";
 import { DeletePatient, EditPatient } from "./overview-forms";
+import { titled } from "@/app/page-title";
+
+export const generateMetadata = titled("Patient", "overview");
 
 type Props = PageProps<"/patients/[patientId]">;
 

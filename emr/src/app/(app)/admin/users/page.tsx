@@ -5,17 +5,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { orSignIn } from "@/server/page";
 import { listUsers, me } from "@/server/services/users";
 import { PendingActions, UserRowActions } from "./user-actions";
+import { titled } from "@/app/page-title";
+
+export const generateMetadata = titled("AdminUsers");
 
 export default async function AdminUsersPage() {
   const t = await getTranslations("AdminUsers");
   const c = await getTranslations("Common");
   return (
-    <main className="mx-auto grid w-full grid-cols-[minmax(0,1fr)] max-w-5xl gap-6 px-4 py-6 md:py-8">
+    <div className="mx-auto grid w-full grid-cols-[minmax(0,1fr)] max-w-5xl gap-6 px-4 py-6 md:py-8">
       <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
       <Suspense fallback={<p className="text-muted-foreground">{c("loading")}</p>}>
         <Users />
       </Suspense>
-    </main>
+    </div>
   );
 }
 

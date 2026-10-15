@@ -20,7 +20,8 @@ const geistMono = Geist_Mono({
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Metadata");
-  return { title: t("title") };
+  // Pages set their own title (src/app/page-title.ts); this adds the app's name.
+  return { title: { template: `%s · ${t("title")}`, default: t("title") } };
 }
 
 // Every page is rendered per request, never served from a build-time copy: the

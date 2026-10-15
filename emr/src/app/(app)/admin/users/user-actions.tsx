@@ -37,7 +37,7 @@ export function PendingActions({ user, isDoctor }: { user: Target; isDoctor: boo
             id={selectId}
             value={specialty}
             onChange={(e) => setSpecialty(e.target.value)}
-            className="h-8 rounded-lg border bg-background px-2 text-sm"
+            className="h-8 pointer-coarse:h-10 rounded-lg border bg-background px-2 text-sm"
           >
             <option value="">{t("chooseSpecialty")}</option>
             {SPECIALTIES.map((sp) => (

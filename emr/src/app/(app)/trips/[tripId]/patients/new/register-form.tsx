@@ -35,7 +35,7 @@ export function RegisterPatientForm({ tripId, today }: { tripId: string; today: 
                 {optionLabel(o, "conditions", c)}
               </label>
               {ticked.includes(c) && (
-                <select name={`severity:${c}`} aria-label={`${t("severity")}: ${optionLabel(o, "conditions", c)}`} defaultValue="" className="h-7 rounded-md border bg-background px-1.5 text-xs">
+                <select name={`severity:${c}`} aria-label={`${t("severity")}: ${optionLabel(o, "conditions", c)}`} defaultValue="" className="h-7 pointer-coarse:h-10 rounded-md border bg-background px-1.5 text-xs pointer-coarse:text-sm">
                   <option value="">{t("severity")}</option>
                   {asOptions(["MILD", "MODERATE", "SEVERE"], (x) => sev(x)).map((o) => (
                     <option key={o.value} value={o.value}>

@@ -6,14 +6,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { orSignIn } from "@/server/page";
 import { listConflicts, listSyncNodes } from "@/server/services/sync";
 import { BundleForm } from "./bundle-form";
+import { titled } from "@/app/page-title";
+
+export const generateMetadata = titled("Sync");
 
 export default function SyncPage() {
   return (
-    <main className="mx-auto grid w-full grid-cols-[minmax(0,1fr)] max-w-4xl gap-6 px-4 py-6 md:py-8">
+    <div className="mx-auto grid w-full grid-cols-[minmax(0,1fr)] max-w-4xl gap-6 px-4 py-6 md:py-8">
       <Suspense>
         <Sync />
       </Suspense>
-    </main>
+    </div>
   );
 }
 
@@ -53,7 +56,7 @@ async function Sync() {
           {conflicts.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t("queueEmpty")}</p>
           ) : (
-            <Link href="/conflicts" className="text-sm underline">
+            <Link href="/conflicts" className="text-sm underline pointer-coarse:inline-block pointer-coarse:py-2.5">
               {t("openQueue", { count: conflicts.length })}
             </Link>
           )}

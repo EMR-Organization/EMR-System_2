@@ -25,13 +25,13 @@ export function LoginForm() {
       <div className="flex flex-col gap-1 text-sm text-muted-foreground">
         <p>
           {t("noAccount")}{" "}
-          <Link className="text-primary underline-offset-4 hover:underline" href="/register">
+          <Link className="text-primary underline underline-offset-4 pointer-coarse:inline-block pointer-coarse:py-2.5" href="/register">
             {t("register")}
           </Link>
         </p>
         <p>
           {t("forgot")}{" "}
-          <Link className="text-primary underline-offset-4 hover:underline" href="/reset">
+          <Link className="text-primary underline underline-offset-4 pointer-coarse:inline-block pointer-coarse:py-2.5" href="/reset">
             {t("reset")}
           </Link>
         </p>

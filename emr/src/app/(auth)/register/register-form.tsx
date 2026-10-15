@@ -51,7 +51,7 @@ export function RegisterForm() {
       </Button>
       <p className="text-sm text-muted-foreground">
         {t("haveAccount")}{" "}
-        <Link className="text-primary underline-offset-4 hover:underline" href="/login">
+        <Link className="text-primary underline underline-offset-4 pointer-coarse:inline-block pointer-coarse:py-2.5" href="/login">
           {t("signIn")}
         </Link>
       </p>
